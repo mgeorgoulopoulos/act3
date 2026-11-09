@@ -1,0 +1,117 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Greek resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ELL)
+#ifdef _WIN32
+LANGUAGE LANG_GREEK, SUBLANG_DEFAULT
+#pragma code_page(1253)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG1 DIALOG DISCARDABLE  100, 100, 187, 218
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION
+CAPTION "Middle of Never by Reversed Engineers"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "Go",IDOK,119,14,52,34
+    PUSHBUTTON      "Cancel",IDCANCEL,121,58,50,14
+    CONTROL         103,IDC_STATIC,"Static",SS_BITMAP,25,7,85,79
+    GROUPBOX        "Settings",IDC_STATIC,13,88,161,117
+    GROUPBOX        "Resolution",IDC_STATIC,33,107,122,31
+    CONTROL         "800x600",IDC_RES_800,"Button",BS_AUTORADIOBUTTON,40,121,
+                    47,8
+    CONTROL         "640x480",IDC_RES_640,"Button",BS_AUTORADIOBUTTON,95,122,
+                    44,8
+    CONTROL         "Run in a window",IDC_WINDOWED,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,29,146,72,12
+    CONTROL         "Music",IDC_MUSIC,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    71,162,43,12
+    CONTROL         "Input",IDC_INPUT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    105,179,35,13
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_DIALOG1, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 180
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 211
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BITMAP1             BITMAP  DISCARDABLE     "mon.bmp"
+#endif    // Greek resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
