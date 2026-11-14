@@ -1,4 +1,5 @@
 #pragma once
+#include "extra/mode.h"
 #include "model.h"
 #include "TextureManager.h"
 #include <cstring>
