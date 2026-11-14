@@ -9,11 +9,22 @@ using d3d9::D3DFMT_INDEX16;
 constexpr bool FAILED(d3d9::HRESULT result) { return result < 0; }
 static char text_buffer1[1000];
 
+// Texture loading is outside the scope of the current preview.
+static struct PreviewTextureManager {
+    void SetTexture(LPDIRECT3DDEVICE9 device, unsigned stage, const char* name)
+    {
+        WriteToLog("Preview texture loading is unsupported:");
+        WriteToLog(name);
+        device->SetTexture(stage, nullptr);
+    }
+} TexMan;
+
 @act3_mesh_constructor@
 @act3_mesh_load@
 @act3_mesh_buffers@
 @act3_mesh_render@
 @act3_material_load@
+@act3_material_set@
 
 void WriteToLog(const char* message)
 {

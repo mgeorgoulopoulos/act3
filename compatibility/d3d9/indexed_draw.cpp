@@ -80,6 +80,32 @@ HRESULT Device::SetIndices(IndexBuffer* buffer)
     return D3D_OK;
 }
 
+HRESULT Device::SetMaterial(const Material* material)
+{
+    if (!material)
+        return D3DERR_INVALIDCALL;
+    const auto apply = [](GLenum property, const Color& color) {
+        const GLfloat rgba[] = {color.r, color.g, color.b, color.a};
+        glMaterialfv(GL_FRONT_AND_BACK, property, rgba);
+    };
+    apply(GL_AMBIENT, material->Ambient);
+    apply(GL_DIFFUSE, material->Diffuse);
+    apply(GL_SPECULAR, material->Specular);
+    apply(GL_EMISSION, material->Emissive);
+    const float power = material->Power;
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, power > 0 ? (power < 128 ? power : 128) : 0);
+    return D3D_OK;
+}
+
+HRESULT Device::SetTexture(unsigned stage, BaseTexture* texture)
+{
+    if (stage != 0 || texture)
+        return D3DERR_INVALIDCALL;
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+    return D3D_OK;
+}
+
 HRESULT Device::SetTransform(TransformState state, const Matrix* matrix)
 {
     if (!matrix)

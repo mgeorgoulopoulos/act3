@@ -6,6 +6,12 @@
 #include "../d3dx/matrix.h"
 
 namespace d3d9 {
+struct Color { float r, g, b, a; };
+struct Material {
+    Color Diffuse, Ambient, Specular, Emissive;
+    float Power;
+};
+struct BaseTexture;
 using HRESULT = std::int32_t;
 constexpr HRESULT D3D_OK = 0;
 constexpr HRESULT D3DERR_INVALIDCALL = -2005530516;
@@ -83,6 +89,8 @@ public:
     HRESULT SetIndices(IndexBuffer* buffer);
     HRESULT SetFVF(unsigned format) { fvf = format; return D3D_OK; }
     HRESULT SetTransform(TransformState state, const Matrix* matrix);
+    HRESULT SetMaterial(const Material* material);
+    HRESULT SetTexture(unsigned stage, BaseTexture* texture);
     HRESULT BeginScene()
     {
         if (inScene)

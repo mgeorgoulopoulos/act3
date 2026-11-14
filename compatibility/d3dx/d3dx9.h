@@ -14,12 +14,9 @@ using DWORD = std::uint32_t;
 using D3DXMATRIXA16 = d3d9::Matrix;
 struct D3DXVECTOR3 { float x, y, z; };
 struct D3DXPLANE { float a, b, c, d; };
-struct D3DCOLORVALUE { float r, g, b, a; };
-struct D3DMATERIAL9 {
-    D3DCOLORVALUE Diffuse, Ambient, Specular, Emissive;
-    float Power;
-};
-struct IDirect3DBaseTexture9;
+using D3DCOLORVALUE = d3d9::Color;
+using D3DMATERIAL9 = d3d9::Material;
+using IDirect3DBaseTexture9 = d3d9::BaseTexture;
 using IDirect3DVertexBuffer9 = d3d9::VertexBuffer;
 using IDirect3DIndexBuffer9 = d3d9::IndexBuffer;
 using PDIRECT3DDEVICE9 = d3d9::Device*;

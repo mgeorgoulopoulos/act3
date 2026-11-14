@@ -36,6 +36,7 @@ extract_model_method(act3_mesh_load "int Mesh3DS::LoadFrom3DS(" "void Mesh3DS::I
 extract_model_method(act3_mesh_buffers "int Mesh3DS::CreateBuffers(" "int Mesh3DS::RefreshVertexBuffer(")
 extract_model_method(act3_mesh_render "int Mesh3DS::Render(" "int Mesh3DS::BatchRender(")
 extract_model_method(act3_material_load "int Material::LoadFrom3DS(" "bool Material::IsTheName(")
+extract_model_method(act3_material_set "void Material::Set(" "int MeshIso::CreateBuffers(")
 configure_file(recreated/model_renderer.cpp.in generated/model_renderer.cpp @ONLY)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")

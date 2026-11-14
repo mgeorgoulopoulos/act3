@@ -62,19 +62,7 @@ bool buildNormals(Mesh3DS& mesh)
     return true;
 }
 
-void applyMaterial(const D3DMATERIAL9& material)
-{
-    const auto apply = [](GLenum property, const D3DCOLORVALUE& color) {
-        const GLfloat rgba[] = {color.r, color.g, color.b, color.a};
-        glMaterialfv(GL_FRONT_AND_BACK, property, rgba);
-    };
-    apply(GL_AMBIENT, material.Ambient);
-    apply(GL_DIFFUSE, material.Diffuse);
-    apply(GL_SPECULAR, material.Specular);
-    apply(GL_EMISSION, material.Emissive);
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS,
-        (std::max)(0.0f, (std::min)(128.0f, material.Power)));
-}
+
 }
 
 bool preview::load()
@@ -170,7 +158,7 @@ void preview::draw(int width, int height)
     device.SetTransform(d3d9::D3DTS_VIEW, &view);
     device.SetTransform(d3d9::D3DTS_PROJECTION, &projection);
     for (auto& mesh : meshes) {
-        applyMaterial(mesh.material.Data);
+        mesh.material.Set(&device, nullptr);
         mesh.model.Transform = world;
         const int rendered = mesh.model.Render(&device);
         assert(rendered);
