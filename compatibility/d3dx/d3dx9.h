@@ -32,6 +32,8 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device*, const char*, unsigned,
 using IDirect3DVertexBuffer9 = d3d9::VertexBuffer;
 using IDirect3DIndexBuffer9 = d3d9::IndexBuffer;
 using PDIRECT3DDEVICE9 = d3d9::Device*;
+using IDirect3DDevice9 = d3d9::Device;
+using d3d9::D3DTS_VIEW;
 using LPDIRECT3DDEVICE9 = d3d9::Device*;
 using d3d9::D3DFVF_XYZ;
 using d3d9::D3DFVF_NORMAL;

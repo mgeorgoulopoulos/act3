@@ -1,0 +1,39 @@
+#include "camera.h"
+#include "log.h"
+#include <cstdio>
+#include <cmath>
+
+static float D3DXVec3Dot(const D3DXVECTOR3* a, const D3DXVECTOR3* b)
+{
+    return a->x*b->x + a->y*b->y + a->z*b->z;
+}
+
+static void D3DXVec3TransformCoord(D3DXVECTOR3* out, const D3DXVECTOR3* in,
+    const D3DXMATRIXA16* rotation)
+{
+    const D3DXVECTOR3 v = *in;
+    const auto& m = rotation->m;
+    *out = {v.x*m[0][0] + v.y*m[1][0] + v.z*m[2][0],
+            v.x*m[0][1] + v.y*m[1][1] + v.z*m[2][1],
+            v.x*m[0][2] + v.y*m[1][2] + v.z*m[2][2]};
+}
+
+static void D3DXMatrixRotationYawPitchRoll(D3DXMATRIXA16* out,
+    float yaw, float pitch, float roll)
+{
+    D3DXMATRIXA16 x, y, z;
+    x._22 = x._33 = std::cos(pitch);
+    x._23 = std::sin(pitch);
+    x._32 = -x._23;
+    y._11 = y._33 = std::cos(yaw);
+    y._31 = std::sin(yaw);
+    y._13 = -y._31;
+    z._11 = z._22 = std::cos(roll);
+    z._12 = std::sin(roll);
+    z._21 = -z._12;
+    *out = z * x * y;
+}
+
+@camera_constructor@
+@camera_view@
+@camera_sequence@

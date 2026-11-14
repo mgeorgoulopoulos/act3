@@ -3,7 +3,14 @@
 namespace d3d9 {
 // D3D row-major storage, with points multiplied as row vectors.
 struct Matrix {
-    float m[4][4] = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
+    union {
+        float m[4][4];
+        struct {
+            float _11, _12, _13, _14, _21, _22, _23, _24;
+            float _31, _32, _33, _34, _41, _42, _43, _44;
+        };
+    };
+    Matrix() : m{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}} {}
 };
 
 inline Matrix operator*(const Matrix& left, const Matrix& right)

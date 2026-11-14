@@ -64,6 +64,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
     int result = 0;
     if (context && wglMakeCurrent(dc, context)) {
         ShowWindow(window, showMode);
+        SetTimer(window, 1, 16, nullptr);
         glClearColor(0.05f, 0.09f, 0.18f, 1.0f);
 
         MSG message{};
@@ -77,6 +78,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
             SwapBuffers(dc);
         }
         result = received == -1 ? 1 : static_cast<int>(message.wParam);
+        KillTimer(window, 1);
         preview::releaseTextures();
         wglMakeCurrent(nullptr, nullptr);
     } else {

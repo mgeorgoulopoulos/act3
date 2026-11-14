@@ -1,6 +1,7 @@
 #include <GL/glx.h>
 #include <X11/keysym.h>
 #include <cstdio>
+#include <poll.h>
 #include "../recreated/mesh_preview.h"
 
 namespace {
@@ -43,6 +44,14 @@ int runWindow(Display* display)
         int width = 800;
         int height = 600;
         while (running) {
+            if (!XPending(display)) {
+                pollfd connection{ConnectionNumber(display), POLLIN, 0};
+                if (poll(&connection, 1, 16) <= 0) {
+                    preview::draw(width, height);
+                    glXSwapBuffers(display, window);
+                    continue;
+                }
+            }
             XEvent event{};
             XNextEvent(display, &event);
             switch (event.type) {
