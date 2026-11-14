@@ -12,6 +12,7 @@ TextureManager TexMan;
 
 @act3_mesh_constructor@
 @act3_mesh_clear@
+@act3_transform_bounds@
 @act3_bb_indices@
 @act3_mesh_name@
 @act3_mesh_buffers@

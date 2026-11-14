@@ -104,6 +104,7 @@ public:
     HRESULT SetIndices(IndexBuffer* buffer);
     HRESULT SetFVF(unsigned format) { fvf = format; return D3D_OK; }
     HRESULT SetTransform(TransformState state, const Matrix* matrix);
+    HRESULT GetTransform(TransformState state, Matrix* matrix) const;
     HRESULT SetMaterial(const Material* material);
     HRESULT SetTexture(unsigned stage, BaseTexture* texture);
     HRESULT SetTextureStageState(unsigned stage, TextureStageState state, unsigned value);

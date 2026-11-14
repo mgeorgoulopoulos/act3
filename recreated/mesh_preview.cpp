@@ -72,7 +72,7 @@ void drawRoom(d3d9::Device& device)
     device.SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
 }
 
-void drawEggplants(d3d9::Device& device, bool reflected)
+void drawEggplants(d3d9::Device& device, bool reflected, CULLINFO& frustum)
 {
     constexpr auto coord = d3d9::D3DTSS_TEXCOORDINDEX;
     if (eggplantCube)
@@ -84,6 +84,10 @@ void drawEggplants(d3d9::Device& device, bool reflected)
         materials[i]->Set(&device, eggplantCube);
         for (const auto& placement : placements) {
             meshes[i]->Transform = reflected ? reflection * placement : placement;
+            meshes[i]->TransformBoundingBox();
+            meshes[i]->CalculateBBPlanes();
+            if (!ObjectInFrustum(&frustum, meshes[i]->BoundingBoxScratch, meshes[i]->BBPlanes))
+                continue;
             const int rendered = meshes[i]->Render(&device);
             assert(rendered);
         }
@@ -168,14 +172,18 @@ void preview::draw(int width, int height)
     camera.Cerp(static_cast<unsigned long>(elapsed % duration));
     camera.UpdateViewMatrix(&device);
     device.SetTransform(d3d9::D3DTS_PROJECTION, &projection);
+    d3d9::Matrix view;
+    device.GetTransform(d3d9::D3DTS_VIEW, &view);
+    CULLINFO frustum;
+    UpdateCullInfo(&frustum, &view, &projection);
     if (!eggplantCube) {
         const auto result = loadEggplantCubemap(&device, eggplantCube);
         assert(result == d3d9::D3D_OK);
     }
-    drawEggplants(device, true);
+    drawEggplants(device, true, frustum);
     // Scene1 disables lighting for the floor and leaves it off for the main grid.
     drawRoom(device);
-    drawEggplants(device, false);
+    drawEggplants(device, false, frustum);
     glDisable(GL_NORMALIZE);
     device.SetRenderState(D3DRS_LIGHTING, 0);
     glDisable(GL_LIGHT0);

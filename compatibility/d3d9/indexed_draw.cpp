@@ -199,6 +199,19 @@ HRESULT Device::SetTransform(TransformState state, const Matrix* matrix)
     return D3D_OK;
 }
 
+HRESULT Device::GetTransform(TransformState state, Matrix* matrix) const
+{
+    if (!matrix)
+        return D3DERR_INVALIDCALL;
+    switch (state) {
+    case D3DTS_WORLD: *matrix = world; break;
+    case D3DTS_VIEW: *matrix = view; break;
+    case D3DTS_PROJECTION: *matrix = projection; break;
+    default: return D3DERR_INVALIDCALL;
+    }
+    return D3D_OK;
+}
+
 HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     unsigned minVertex, unsigned vertexCount, unsigned startIndex,
     unsigned primitiveCount) const

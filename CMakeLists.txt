@@ -17,6 +17,7 @@ endif()
 
 target_compile_features(act3 PRIVATE cxx_std_11)
 target_sources(act3 PRIVATE recreated/mesh_preview.cpp compatibility/d3d9/indexed_draw.cpp)
+target_sources(act3 PRIVATE Frustum.cpp compatibility/d3dx/geometry.cpp)
 # Build the original entry points until the remaining model.cpp methods can
 # compile against the compatibility layer.
 set(model_source "${CMAKE_CURRENT_SOURCE_DIR}/model.cpp")
@@ -44,7 +45,8 @@ configure_file(recreated/camera_playback.cpp.in generated/camera_playback.cpp @O
 target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/camera_playback.cpp")
 extract_model_method(act3_mesh_constructor "Mesh3DS::Mesh3DS()" "void Mesh3DS::Twist(")
 extract_model_method(act3_mesh_clear "void Mesh3DS::ClearTransform(" "void Mesh3DS::SetTransform(")
-extract_model_method(act3_bb_indices "void Mesh3DS::SetBBIndices(" "void Mesh3DS::CalculateBBPlanes(")
+extract_model_method(act3_transform_bounds "void Mesh3DS::TransformBoundingBox(" "int Mesh3DS::LoadFrom3DS(")
+extract_model_method(act3_bb_indices "void Mesh3DS::SetBBIndices(" "bool Mesh3DS::IsTheName(")
 extract_model_method(act3_mesh_name "bool Mesh3DS::IsTheName(" "int Mesh3DS::CreateBuffers(")
 extract_model_method(act3_mesh_buffers "int Mesh3DS::CreateBuffers(" "int Mesh3DS::RefreshVertexBuffer(")
 extract_model_method(act3_mesh_render "int Mesh3DS::Render(" "void Mesh3DS::Release(")
