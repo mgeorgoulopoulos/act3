@@ -87,7 +87,7 @@ int runWindow(Display* display)
 int main()
 {
     if (!preview::load())
-        return reportError("Could not load eggplant.3ds.");
+        return reportError("Could not load test.s3d.");
     Display* display = XOpenDisplay(nullptr);
     if (!display)
         return reportError("Could not connect to the X display.");

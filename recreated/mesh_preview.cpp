@@ -10,6 +10,7 @@ extern TextureManager TexMan;
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#undef GetObject
 #endif
 #include <GL/gl.h>
 
@@ -26,48 +27,12 @@ using d3d9::D3DFVF_TEX1;
 static_assert(sizeof(MODEL_VERTEX) == 8 * sizeof(float) &&
     offsetof(MODEL_VERTEX, nx) == 3 * sizeof(float) &&
     offsetof(MODEL_VERTEX, tu) == 6 * sizeof(float), "Unexpected MODEL_VERTEX layout");
-struct PreviewMesh {
-    Mesh3DS model;
-    Material material{};
-
-    ~PreviewMesh()
-    {
-        if (model.pVB)
-            model.pVB->Release();
-        if (model.pIB)
-            model.pIB->Release();
-        std::free(model.VertexList);
-        std::free(model.IndexList);
-    }
-};
-
-PreviewMesh meshes[2];
+Scene3DS scene{};
+Mesh3DS* meshes[2]{};
+Material* materials[2]{};
 Vertex center{};
 float radius = 0;
 LPDIRECT3DCUBETEXTURE9 eggplantCube = nullptr;
-
-bool buildNormals(Mesh3DS& mesh)
-{
-    for (unsigned i = 0; i < mesh.NumIndices; i += 3) {
-        const auto* face = mesh.IndexList + i;
-        if (face[0] >= mesh.NumVertices || face[1] >= mesh.NumVertices ||
-            face[2] >= mesh.NumVertices)
-            return false;
-        auto& a = mesh.VertexList[face[0]];
-        auto& b = mesh.VertexList[face[1]];
-        auto& c = mesh.VertexList[face[2]];
-        const Vertex u{{b.x-a.x, b.y-a.y, b.z-a.z}};
-        const Vertex v{{c.x-a.x, c.y-a.y, c.z-a.z}};
-        for (auto* vertex : {&a, &b, &c}) {
-            vertex->nx += u[1]*v[2] - u[2]*v[1];
-            vertex->ny += u[2]*v[0] - u[0]*v[2];
-            vertex->nz += u[0]*v[1] - u[1]*v[0];
-        }
-    }
-    return true;
-}
-
-
 }
 
 bool preview::load()
@@ -75,18 +40,20 @@ bool preview::load()
     char path[] = ACT3_MESH_PATH;
     char names[][5] = {"Stem", "Egg"};
     d3d9::Device device;
+    if (!scene.LoadFromS3D(path, &device))
+        return false;
     Vertex low, high;
     bool first = true;
     for (unsigned i = 0; i < 2; ++i) {
-        auto& mesh = meshes[i].model;
-        if (!mesh.LoadFrom3DS(path, names[i]) || !mesh.NumVertices ||
-            !mesh.NumIndices || mesh.NumIndices % 3 ||
-            !meshes[i].material.LoadFrom3DS(path, mesh.MaterialName))
+        auto* mesh = scene.GetObject(names[i]);
+        if (!mesh || !mesh->NumVertices || !mesh->pVB || !mesh->pIB)
             return false;
-
-        for (unsigned j = 0; j < mesh.NumVertices; ++j) {
-            auto& v = mesh.VertexList[j];
-            v.nx = v.ny = v.nz = 0;
+        meshes[i] = mesh;
+        materials[i] = scene.MaMa.GetMaterial(mesh->MaterialName);
+        if (!materials[i])
+            return false;
+        for (unsigned j = 0; j < mesh->NumVertices; ++j) {
+            const auto& v = mesh->VertexList[j];
             const Vertex point{{v.x, v.y, v.z}};
             if (first) {
                 low = high = point;
@@ -97,12 +64,6 @@ bool preview::load()
                 high[axis] = (std::max)(high[axis], point[axis]);
             }
         }
-
-        if (!buildNormals(mesh))
-            return false;
-        mesh.CreateBuffers(&device);
-        if (!mesh.pVB || !mesh.pIB || !mesh.RefreshBuffers())
-            return false;
     }
 
     radius = 0;
@@ -169,10 +130,10 @@ void preview::draw(int width, int height)
     if (eggplantCube)
         device.SetTextureStageState(0, d3d9::D3DTSS_TEXCOORDINDEX,
             d3d9::D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
-    for (auto& mesh : meshes) {
-        mesh.material.Set(&device, eggplantCube);
-        mesh.model.Transform = world;
-        const int rendered = mesh.model.Render(&device);
+    for (unsigned i = 0; i < 2; ++i) {
+        materials[i]->Set(&device, eggplantCube);
+        meshes[i]->Transform = world;
+        const int rendered = meshes[i]->Render(&device);
         assert(rendered);
     }
     device.SetTextureStageState(0, d3d9::D3DTSS_TEXCOORDINDEX,
@@ -207,6 +168,15 @@ void preview::releaseTextures()
         eggplantCube->Release();
         eggplantCube = nullptr;
     }
+    for (unsigned i = 0; i < scene.NumObjects; ++i) {
+        auto& mesh = scene.ObjectList[i];
+        if (mesh.pVB) mesh.pVB->Release();
+        if (mesh.pIB) mesh.pIB->Release();
+        std::free(mesh.VertexList);
+        std::free(mesh.IndexList);
+    }
+    delete[] scene.ObjectList;
+    std::free(scene.MaMa.MaterialList);
     TexMan.Release();
     TexMan.pFirstEntry = nullptr;
 }

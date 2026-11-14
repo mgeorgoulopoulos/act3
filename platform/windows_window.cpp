@@ -33,7 +33,7 @@ int reportError(const char* message)
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
 {
     if (!preview::load())
-        return reportError("Could not load eggplant.3ds.");
+        return reportError("Could not load test.s3d.");
     WNDCLASSA windowType{};
     windowType.style = CS_OWNDC;
     windowType.lpfnWndProc = windowProc;
