@@ -3542,7 +3542,7 @@ int Scene3DS::LoadFromS3D(char* filename , LPDIRECT3DDEVICE9 pDevice)
 {
 
 	// Open the input file
-	FILE* input = fopen(filename , "r+b");
+	FILE* input = fopen(filename , "rb");
 
 	if (!input) return 0;
 

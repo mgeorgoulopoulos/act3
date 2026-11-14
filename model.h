@@ -262,7 +262,7 @@ class MaterialManager
 public:
 
 	Material*		MaterialList;
-	unsigned long	NumMaterials;
+	std::uint32_t	NumMaterials;
 
 	int				LoadFrom3DS(char* filename);
 	void			Release();
@@ -276,7 +276,7 @@ class Scene3DS
 {
 public:
 	Mesh3DS*		ObjectList;
-	unsigned long	NumObjects;
+	std::uint32_t	NumObjects;
 
 	MaterialManager	MaMa;
 
