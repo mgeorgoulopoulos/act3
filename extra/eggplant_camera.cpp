@@ -8,7 +8,6 @@ struct Pose { Vector3 eye, target; float roll; };
 struct Shot { float end; Pose from, to; };
 constexpr float pi = 3.14159265358979323846f;
 constexpr unsigned harpStartMs = 29186;
-constexpr unsigned harpEndMs = 35729;
 const Shot shots[] = {
     // Pull back from the light and reveal the still figures below it.
     {8, {{975,298,0}, {1000,300,0}, 0}, {{-430,410,-760}, {390,210,-100}, 0}},
@@ -18,8 +17,6 @@ const Shot shots[] = {
     {24, {{-305,113,-140}, {360,205,-3}, -5}, {{-305,113,142}, {360,205,3}, 7}},
     // A wide, rolling rise into the cut to the recorded harp passage.
     {harpStartMs / 1000.f, {{283,105,842}, {275,180,210}, -13}, {{795,390,532}, {185,175,105}, 14}},
-    // End inside the egg's silhouette for the cut to the rounded blob.
-    {40, {{-32,208,-226}, {-10,156,-14}, -8}, {{-12,159,-46}, {-10,156,-14}, 0}},
 };
 
 Vector3 mix(Vector3 a, Vector3 b, float t)
@@ -44,7 +41,7 @@ bool extra::applyEggplantCamera(d3d9::Device& device, unsigned milliseconds)
         return false;
     const auto time = milliseconds % 40000;
     // Keep the original rapid turns and roll at their recorded timestamps.
-    if (time >= harpStartMs && time < harpEndMs)
+    if (time >= harpStartMs)
         return false;
     const float seconds = time / 1000.f;
     float start = 0;
@@ -53,8 +50,6 @@ bool extra::applyEggplantCamera(d3d9::Device& device, unsigned milliseconds)
             start = shot.end;
             continue;
         }
-        if (time >= harpEndMs)
-            start = harpEndMs / 1000.f;
         const float phase = (seconds-start)/(shot.end-start);
         const float t = phase*phase*(3-2*phase);
         auto eye = mix(shot.from.eye, shot.to.eye, t);
