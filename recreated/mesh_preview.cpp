@@ -74,6 +74,28 @@ void drawRoom(d3d9::Device& device)
     glEnable(GL_LIGHTING);
 }
 
+void drawEggplants(d3d9::Device& device, bool reflected)
+{
+    constexpr auto coord = d3d9::D3DTSS_TEXCOORDINDEX;
+    if (eggplantCube)
+        device.SetTextureStageState(0, coord, d3d9::D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
+    glFrontFace(reflected ? GL_CCW : GL_CW);
+    glCullFace(GL_BACK);
+    glEnable(GL_CULL_FACE);
+    d3d9::Matrix reflection;
+    reflection._22 = -1;
+    for (unsigned i = 0; i < 2; ++i) {
+        materials[i]->Set(&device, eggplantCube);
+        for (const auto& placement : placements) {
+            meshes[i]->Transform = reflected ? reflection * placement : placement;
+            const int rendered = meshes[i]->Render(&device);
+            assert(rendered);
+        }
+    }
+    glDisable(GL_CULL_FACE);
+    device.SetTextureStageState(0, coord, d3d9::D3DTSS_TCI_PASSTHRU);
+}
+
 void releaseScene(Scene3DS& loaded)
 {
     for (unsigned i = 0; i < loaded.NumObjects; ++i) {
@@ -132,7 +154,14 @@ void preview::draw(int width, int height)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     const GLfloat light[] = {-0.4f, 0.7f, 1.0f, 0.0f};
+    const GLfloat ambient[] = {1, 1, 1, 1};
+    const GLfloat diffuse[] = {0.9f, 0.9f, 0.9f, 1};
+    const GLfloat specular[] = {0.1f, 0.1f, 0.1f, 1};
     glLightfv(GL_LIGHT0, GL_POSITION, light);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
     glEnable(GL_LIGHT0);
     glEnable(GL_LIGHTING);
     glEnable(GL_NORMALIZE);
@@ -143,24 +172,13 @@ void preview::draw(int width, int height)
     camera.Cerp(static_cast<unsigned long>(elapsed % duration));
     camera.UpdateViewMatrix(&device);
     device.SetTransform(d3d9::D3DTS_PROJECTION, &projection);
-    drawRoom(device);
     if (!eggplantCube) {
         const auto result = loadEggplantCubemap(&device, eggplantCube);
         assert(result == d3d9::D3D_OK);
     }
-    if (eggplantCube)
-        device.SetTextureStageState(0, d3d9::D3DTSS_TEXCOORDINDEX,
-            d3d9::D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
-    for (unsigned i = 0; i < 2; ++i) {
-        materials[i]->Set(&device, eggplantCube);
-        for (const auto& placement : placements) {
-            meshes[i]->Transform = placement;
-            const int rendered = meshes[i]->Render(&device);
-            assert(rendered);
-        }
-    }
-    device.SetTextureStageState(0, d3d9::D3DTSS_TEXCOORDINDEX,
-        d3d9::D3DTSS_TCI_PASSTHRU);
+    drawEggplants(device, true);
+    drawRoom(device);
+    drawEggplants(device, false);
     glDisable(GL_NORMALIZE);
     glDisable(GL_LIGHTING);
     glDisable(GL_LIGHT0);
