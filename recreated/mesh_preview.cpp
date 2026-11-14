@@ -1,4 +1,6 @@
 #include "mesh_preview.h"
+#include "../compatibility/d3d9/indexed_draw.h"
+#include <cassert>
 #include "../fvf.h"
 
 #ifdef _WIN32
@@ -93,14 +95,17 @@ void preview::draw(int width, int height)
     glScalef(scale, scale, scale);
     glTranslatef(-center[0], -center[1], -center[2]);
     glEnable(GL_DEPTH_TEST);
-    glEnableClientState(GL_VERTEX_ARRAY);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glColor3f(0.79f, 0.57f, 1.0f);
+    d3d9::Device device;
+    device.SetFVF(d3d9::D3DFVF_XYZ);
     for (const auto& mesh : meshes) {
-        glVertexPointer(3, GL_FLOAT, sizeof(Vertex), mesh.vertices.data());
-        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.size()),
-            GL_UNSIGNED_SHORT, mesh.indices.data());
+        const auto vertexCount = static_cast<unsigned>(mesh.vertices.size());
+        device.SetStreamSource(mesh.vertices.data(), sizeof(Vertex), vertexCount);
+        device.SetIndices(mesh.indices.data(), mesh.indices.size());
+        const bool drawn = device.DrawIndexedPrimitive(d3d9::D3DPT_TRIANGLELIST,
+            0, 0, vertexCount, 0, static_cast<unsigned>(mesh.indices.size() / 3));
+        assert(drawn);
     }
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glDisableClientState(GL_VERTEX_ARRAY);
 }

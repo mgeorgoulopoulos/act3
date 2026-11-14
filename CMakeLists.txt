@@ -15,7 +15,7 @@ else()
 endif()
 
 target_compile_features(act3 PRIVATE cxx_std_11)
-target_sources(act3 PRIVATE recreated/mesh_preview.cpp)
+target_sources(act3 PRIVATE recreated/mesh_preview.cpp compatibility/d3d9/indexed_draw.cpp)
 set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3/data/geometry"
     CACHE PATH "Directory containing the original ACT3 geometry")
 add_executable(act3_export_eggplant recreated/export_eggplant.cpp 3ds.cpp)
