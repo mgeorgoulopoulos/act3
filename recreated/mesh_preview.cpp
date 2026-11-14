@@ -1,4 +1,5 @@
 #include "mesh_preview.h"
+#include "eggplant_cubemap.h"
 #include "../compatibility/d3d9/indexed_draw.h"
 #include <cassert>
 #include "../model.h"
@@ -43,7 +44,7 @@ struct PreviewMesh {
 PreviewMesh meshes[2];
 Vertex center{};
 float radius = 0;
-LPDIRECT3DCUBETEXTURE9 chrome = nullptr;
+LPDIRECT3DCUBETEXTURE9 eggplantCube = nullptr;
 
 bool buildNormals(Mesh3DS& mesh)
 {
@@ -161,16 +162,15 @@ void preview::draw(int width, int height)
     d3d9::Device device;
     device.SetTransform(d3d9::D3DTS_VIEW, &view);
     device.SetTransform(d3d9::D3DTS_PROJECTION, &projection);
-    if (!chrome) {
-        const auto result = D3DXCreateCubeTextureFromFile(&device,
-            "data\\textures\\chrome.dds", &chrome);
+    if (!eggplantCube) {
+        const auto result = loadEggplantCubemap(&device, eggplantCube);
         assert(result == d3d9::D3D_OK);
     }
-    if (chrome)
+    if (eggplantCube)
         device.SetTextureStageState(0, d3d9::D3DTSS_TEXCOORDINDEX,
             d3d9::D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
     for (auto& mesh : meshes) {
-        mesh.material.Set(&device, chrome);
+        mesh.material.Set(&device, eggplantCube);
         mesh.model.Transform = world;
         const int rendered = mesh.model.Render(&device);
         assert(rendered);
@@ -203,9 +203,9 @@ void preview::draw(int width, int height)
 
 void preview::releaseTextures()
 {
-    if (chrome) {
-        chrome->Release();
-        chrome = nullptr;
+    if (eggplantCube) {
+        eggplantCube->Release();
+        eggplantCube = nullptr;
     }
     TexMan.Release();
     TexMan.pFirstEntry = nullptr;

@@ -39,6 +39,16 @@ extract_model_method(act3_mesh_render "int Mesh3DS::Render(" "int Mesh3DS::Batch
 extract_model_method(act3_material_load "int Material::LoadFrom3DS(" "bool Material::IsTheName(")
 extract_model_method(act3_material_set "void Material::Set(" "int MeshIso::CreateBuffers(")
 configure_file(recreated/model_renderer.cpp.in generated/model_renderer.cpp @ONLY)
+set(eggplant_source "${CMAKE_CURRENT_SOURCE_DIR}/EggplantScene.cpp")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${eggplant_source}")
+file(READ "${eggplant_source}" eggplant_code)
+string(REGEX MATCH "D3DXCreateCubeTextureFromFile[(][^)]*[)]"
+    eggplant_cube_call "${eggplant_code}")
+if(NOT eggplant_cube_call)
+    message(FATAL_ERROR "Cannot locate EggplantScene cubemap load")
+endif()
+configure_file(recreated/eggplant_cubemap.cpp.in generated/eggplant_cubemap.cpp @ONLY)
+target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/eggplant_cubemap.cpp")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")
 target_sources(act3 PRIVATE 3ds.cpp TextureManager.cpp compatibility/d3dx/texture.cpp
@@ -51,5 +61,5 @@ target_include_directories(act3 PRIVATE compatibility/d3dx)
 configure_file("${ACT3_GEOMETRY_DIR}/eggplant.3ds" assets/eggplant.3ds COPYONLY)
 target_compile_definitions(act3 PRIVATE ACT3_MESH_PATH="${CMAKE_CURRENT_BINARY_DIR}/assets/eggplant.3ds")
 configure_file("${ACT3_GEOMETRY_DIR}/../textures/loading.png" assets/textures/loading.png COPYONLY)
-configure_file("${ACT3_GEOMETRY_DIR}/../textures/chrome.dds" assets/textures/chrome.dds COPYONLY)
+configure_file("${ACT3_GEOMETRY_DIR}/../textures/metal.dds" assets/textures/metal.dds COPYONLY)
 target_compile_definitions(act3 PRIVATE ACT3_TEXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/assets/textures")

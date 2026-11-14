@@ -1,0 +1,8 @@
+#include "recreated/eggplant_cubemap.h"
+
+d3d9::HRESULT preview::loadEggplantCubemap(d3d9::Device* m_pd3dDevice,
+    LPDIRECT3DCUBETEXTURE9& CubeMap)
+{
+    // The call is taken from Scene1::Init at configure time.
+    return @eggplant_cube_call@;
+}
