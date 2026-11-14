@@ -349,7 +349,7 @@ CameraSequence::~CameraSequence()
 {
 
 	if (m_pKeyframes)
-		delete m_pKeyframes;
+		delete[] m_pKeyframes;
 
 }
 
@@ -357,7 +357,7 @@ bool CameraSequence::Load(char* filename)
 {
 
 	FILE* input;
-	input = fopen(filename , "r+b");
+	input = fopen(filename , "rb");
 
 	if (!input)
 	{
@@ -366,7 +366,7 @@ bool CameraSequence::Load(char* filename)
 	}
 
 	// read in number of frames
-	fread(&m_dwNumShots , sizeof(unsigned long),1,input);
+	fread(&m_dwNumShots , sizeof(m_dwNumShots),1,input);
 
 	if (!m_dwNumShots) 
 	{

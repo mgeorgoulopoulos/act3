@@ -34,7 +34,7 @@ class CameraShot
 public:
 	float			x,y,z;
 	float			yaw,pitch,roll;
-	unsigned long	TimeDelta;
+	std::uint32_t	TimeDelta;
 
 	CameraShot();
 	CameraShot(float X   , float Y     , float Z , 
@@ -63,7 +63,7 @@ class CameraSequence
 {
 public:
 
-	unsigned long		m_dwNumShots;
+	std::uint32_t		m_dwNumShots;
 	CameraShot*			m_pKeyframes;
 
 	unsigned long		m_dwTotalTime;
