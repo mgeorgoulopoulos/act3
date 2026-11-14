@@ -8,7 +8,7 @@ static float D3DXVec3Dot(const D3DXVECTOR3* a, const D3DXVECTOR3* b)
     return a->x*b->x + a->y*b->y + a->z*b->z;
 }
 
-static void D3DXMatrixRotationYawPitchRoll(D3DXMATRIXA16* out,
+void D3DXMatrixRotationYawPitchRoll(D3DXMATRIXA16* out,
     float yaw, float pitch, float roll)
 {
     D3DXMATRIXA16 x, y, z;
@@ -26,4 +26,5 @@ static void D3DXMatrixRotationYawPitchRoll(D3DXMATRIXA16* out,
 
 @camera_constructor@
 @camera_view@
+@camera_direction@
 @camera_sequence@

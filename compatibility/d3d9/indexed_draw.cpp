@@ -6,6 +6,7 @@
 #endif
 #include <GL/gl.h>
 #include <limits>
+#include <cstring>
 
 #include <new>
 
@@ -27,7 +28,8 @@ HRESULT Device::CreateVertexBuffer(unsigned length, unsigned usage, unsigned for
         return D3DERR_INVALIDCALL;
     *buffer = nullptr;
     if (!length || (usage & ~D3DUSAGE_WRITEONLY) || pool != D3DPOOL_SYSTEMMEM ||
-        sharedHandle || (format != D3DFVF_XYZ && format != modelFormat))
+        sharedHandle || (format != D3DFVF_XYZ && format != modelFormat &&
+            format != (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1)))
         return D3DERR_INVALIDCALL;
     try {
         *buffer = new VertexBuffer(length);
@@ -228,6 +230,83 @@ HRESULT Device::GetTransform(TransformState state, Matrix* matrix) const
     return D3D_OK;
 }
 
+void Device::applyTransforms() const
+{
+    // Convert D3D clip depth [0,w] to OpenGL clip depth [-w,w].
+    Matrix clip;
+    clip.m[2][2] = 2;
+    clip.m[3][2] = -1;
+    const auto glProjection = projection * clip;
+    const auto modelView = world * view;
+    // OpenGL reads the same memory as column-major, transposing both matrices.
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(&glProjection.m[0][0]);
+    glMatrixMode(GL_MODELVIEW);
+    if (light0Enabled) {
+        // D3D stores the direction of travel. OpenGL takes the direction to the light.
+        const GLfloat direction[] = {-light0.Direction.x, -light0.Direction.y,
+            -light0.Direction.z, 0};
+        glLoadMatrixf(&view.m[0][0]);
+        glLightfv(GL_LIGHT0, GL_POSITION, direction);
+        const auto apply = [](GLenum property, const Color& color) {
+            const GLfloat rgba[] = {color.r, color.g, color.b, color.a};
+            glLightfv(GL_LIGHT0, property, rgba);
+        };
+        apply(GL_AMBIENT, light0.Ambient);
+        apply(GL_DIFFUSE, light0.Diffuse);
+        apply(GL_SPECULAR, light0.Specular);
+        glEnable(GL_LIGHT0);
+    } else {
+        glDisable(GL_LIGHT0);
+    }
+    glLoadMatrixf(&modelView.m[0][0]);
+}
+
+HRESULT Device::Clear(unsigned count, const void* rects, unsigned flags, unsigned color,
+    float depth, unsigned stencil)
+{
+    if (count || rects || (flags & ~3u) || stencil)
+        return D3DERR_INVALIDCALL;
+    glClearColor(((color >> 16) & 255)/255.f, ((color >> 8) & 255)/255.f,
+        (color & 255)/255.f, ((color >> 24) & 255)/255.f);
+    glClearDepth(depth);
+    glClear((flags & 1 ? GL_COLOR_BUFFER_BIT : 0) | (flags & 2 ? GL_DEPTH_BUFFER_BIT : 0));
+    return D3D_OK;
+}
+
+HRESULT Device::SetSamplerState(unsigned stage, unsigned state, unsigned value)
+{
+    // 2D and cube textures are already uploaded with linear base-level filtering.
+    return stage == 0 && state >= 5 && state <= 7 && value == 2 ? D3D_OK : D3DERR_INVALIDCALL;
+}
+
+HRESULT Device::DrawPrimitive(PrimitiveType type, unsigned start, unsigned count) const
+{
+    if (type != D3DPT_TRIANGLELIST || fvf != (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1) ||
+        !vertexBuffer || vertexBuffer->locked || stride != 24)
+        return D3DERR_INVALIDCALL;
+    const auto available = (vertexBuffer->length - streamOffset) / stride;
+    if (start > available || count > (available - start) / 3)
+        return D3DERR_INVALIDCALL;
+
+    applyTransforms();
+    const auto* bytes = reinterpret_cast<const unsigned char*>(vertexBuffer->storage.data());
+    glBegin(GL_TRIANGLES);
+    for (unsigned i = 0; i < count * 3; ++i) {
+        const auto* vertex = bytes + streamOffset + (start + i) * stride;
+        std::uint32_t color;
+        std::memcpy(&color, vertex + 12, 4);
+        float xyz[3], uv[2];
+        std::memcpy(xyz, vertex, sizeof(xyz));
+        std::memcpy(uv, vertex + 16, sizeof(uv));
+        glColor4ub((color >> 16) & 255, (color >> 8) & 255, color & 255, color >> 24);
+        glTexCoord2fv(uv);
+        glVertex3fv(xyz);
+    }
+    glEnd();
+    return D3D_OK;
+}
+
 HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     unsigned minVertex, unsigned vertexCount, unsigned startIndex,
     unsigned primitiveCount) const
@@ -261,34 +340,7 @@ HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     }
 
     const auto* firstVertex = vertices + (streamOffset + base * stride) / sizeof(float);
-    // Convert D3D clip depth [0,w] to OpenGL clip depth [-w,w].
-    Matrix clip;
-    clip.m[2][2] = 2;
-    clip.m[3][2] = -1;
-    const auto glProjection = projection * clip;
-    const auto modelView = world * view;
-    // OpenGL reads the same memory as column-major, transposing both matrices.
-    glMatrixMode(GL_PROJECTION);
-    glLoadMatrixf(&glProjection.m[0][0]);
-    glMatrixMode(GL_MODELVIEW);
-    if (light0Enabled) {
-        // D3D stores the direction of travel. OpenGL takes the direction to the light.
-        const GLfloat direction[] = {-light0.Direction.x, -light0.Direction.y,
-            -light0.Direction.z, 0};
-        glLoadMatrixf(&view.m[0][0]);
-        glLightfv(GL_LIGHT0, GL_POSITION, direction);
-        const auto apply = [](GLenum property, const Color& color) {
-            const GLfloat rgba[] = {color.r, color.g, color.b, color.a};
-            glLightfv(GL_LIGHT0, property, rgba);
-        };
-        apply(GL_AMBIENT, light0.Ambient);
-        apply(GL_DIFFUSE, light0.Diffuse);
-        apply(GL_SPECULAR, light0.Specular);
-        glEnable(GL_LIGHT0);
-    } else {
-        glDisable(GL_LIGHT0);
-    }
-    glLoadMatrixf(&modelView.m[0][0]);
+    applyTransforms();
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(3, GL_FLOAT, static_cast<GLsizei>(stride), firstVertex);
     if (model) {

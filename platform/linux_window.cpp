@@ -33,6 +33,11 @@ int runWindow(Display* display)
     int result = 0;
     bool windowExists = true;
     if (context && glXMakeCurrent(display, window, context)) {
+        if (!preview::load()) {
+            preview::releaseTextures();
+            glXMakeCurrent(display, None, nullptr); glXDestroyContext(display, context); XDestroyWindow(display, window); XFreeColormap(display, settings.colormap);
+            return reportError("Could not initialize EggplantScene.");
+        }
         const Atom protocols = XInternAtom(display, "WM_PROTOCOLS", False);
         Atom close = XInternAtom(display, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(display, window, &close, 1);
@@ -95,8 +100,6 @@ int runWindow(Display* display)
 
 int main()
 {
-    if (!preview::load())
-        return reportError("Could not load test.s3d.");
     Display* display = XOpenDisplay(nullptr);
     if (!display)
         return reportError("Could not connect to the X display.");

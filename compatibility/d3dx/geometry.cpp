@@ -2,6 +2,24 @@
 #include <cmath>
 #include <utility>
 
+void D3DXMatrixPerspectiveFovLH(D3DXMATRIXA16* m, float fov, float aspect,
+    float nearZ, float farZ)
+{
+    *m = {};
+    m->_22 = 1 / std::tan(fov / 2);
+    m->_11 = m->_22 / aspect;
+    m->_33 = farZ / (farZ - nearZ);
+    m->_34 = 1;
+    m->_43 = -nearZ * m->_33;
+    m->_44 = 0;
+}
+
+void D3DXVec3Normalize(D3DXVECTOR3* out, const D3DXVECTOR3* in)
+{
+    const float length = std::sqrt(in->x*in->x + in->y*in->y + in->z*in->z);
+    *out = length ? D3DXVECTOR3{in->x/length, in->y/length, in->z/length} : D3DXVECTOR3{};
+}
+
 D3DXMATRIXA16* D3DXMatrixInverse(D3DXMATRIXA16* out, float* determinant,
     const D3DXMATRIXA16* in)
 {

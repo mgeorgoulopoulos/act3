@@ -7,6 +7,7 @@ using d3d9::D3DPT_TRIANGLELIST;
 using d3d9::D3DUSAGE_WRITEONLY;
 using d3d9::D3DPOOL_SYSTEMMEM;
 using d3d9::D3DFMT_INDEX16;
+using d3d9::D3DFVF_DIFFUSE; using d3d9::D3DTS_VIEW;
 
 TextureManager TexMan;
 
@@ -23,6 +24,12 @@ TextureManager TexMan;
 @act3_get_object@
 @act3_scene_batch@
 @act3_scene_load@
+@mesh_transform@
+@mesh_release@
+@neighbor_release@
+@scene_transform@
+@scene_release@
+@billboard@
 
 void WriteToLog(const char* message)
 {

@@ -32,8 +32,6 @@ int reportError(const char* message)
 
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
 {
-    if (!preview::load())
-        return reportError("Could not load test.s3d.");
     WNDCLASSA windowType{};
     windowType.style = CS_OWNDC;
     windowType.lpfnWndProc = windowProc;
@@ -63,6 +61,11 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
 
     int result = 0;
     if (context && wglMakeCurrent(dc, context)) {
+        if (!preview::load()) {
+            preview::releaseTextures();
+            wglMakeCurrent(nullptr, nullptr); wglDeleteContext(context); ReleaseDC(window, dc); DestroyWindow(window);
+            return reportError("Could not initialize EggplantScene.");
+        }
         ShowWindow(window, showMode);
         SetTimer(window, 1, 16, nullptr);
         glClearColor(0.05f, 0.09f, 0.18f, 1.0f);

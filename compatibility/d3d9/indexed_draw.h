@@ -7,11 +7,12 @@
 
 namespace d3d9 {
 struct Color { float r, g, b, a; };
+struct Vector3 { float x, y, z; Vector3() = default; Vector3(float x, float y, float z) : x(x), y(y), z(z) {} };
 enum LightType { D3DLIGHT_DIRECTIONAL = 3 };
 struct Light {
     LightType Type;
     Color Diffuse, Specular, Ambient;
-    struct { float x, y, z; } Direction;
+    Vector3 Direction;
     float Range;
 };
 struct Material {
@@ -29,6 +30,7 @@ constexpr HRESULT D3DERR_INVALIDCALL = -2005530516;
 constexpr HRESULT E_OUTOFMEMORY_RESULT = -2147024882;
 constexpr unsigned D3DFVF_XYZ = 0x002;
 constexpr unsigned D3DFVF_NORMAL = 0x010;
+constexpr unsigned D3DFVF_DIFFUSE = 0x040;
 constexpr unsigned D3DFVF_TEX1 = 0x100;
 constexpr unsigned D3DUSAGE_WRITEONLY = 0x008;
 enum PrimitiveType { D3DPT_TRIANGLELIST = 4 };
@@ -114,6 +116,10 @@ public:
     HRESULT GetTransform(TransformState state, Matrix* matrix) const;
     HRESULT SetLight(unsigned index, const Light* light);
     HRESULT LightEnable(unsigned index, int enable);
+    HRESULT Clear(unsigned count, const void* rects, unsigned flags, unsigned color, float depth, unsigned stencil);
+    HRESULT SetSamplerState(unsigned stage, unsigned state, unsigned value);
+    HRESULT DrawPrimitive(PrimitiveType type, unsigned start, unsigned count) const;
+    HRESULT Present(const void*, const void*, void*, const void*) { return D3D_OK; }
     HRESULT SetMaterial(const Material* material);
     HRESULT SetTexture(unsigned stage, BaseTexture* texture);
     HRESULT SetTextureStageState(unsigned stage, TextureStageState state, unsigned value);
@@ -136,6 +142,7 @@ public:
         unsigned vertexCount, unsigned startIndex, unsigned primitiveCount) const;
 
 private:
+    void applyTransforms() const;
     VertexBuffer* vertexBuffer = nullptr;
     IndexBuffer* indexBuffer = nullptr;
     unsigned streamOffset = 0;

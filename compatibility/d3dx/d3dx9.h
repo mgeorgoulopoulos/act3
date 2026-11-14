@@ -4,7 +4,9 @@
 #include "../d3d9/indexed_draw.h"
 
 using FLOAT = float;
+#ifndef VOID
 using VOID = void;
+#endif
 using BOOL = int;
 using INT = int;
 #ifndef TRUE
@@ -19,11 +21,7 @@ using DWORD = std::uint32_t;
 
 using D3DXMATRIXA16 = d3d9::Matrix;
 struct D3DXVECTOR2 { float x, y; };
-struct D3DXVECTOR3 {
-    float x, y, z;
-    D3DXVECTOR3() = default;
-    D3DXVECTOR3(float x, float y, float z) : x(x), y(y), z(z) {}
-};
+using D3DXVECTOR3 = d3d9::Vector3;
 struct D3DXPLANE { float a, b, c, d; };
 using D3DMATERIAL9 = d3d9::Material;
 using D3DLIGHT9 = d3d9::Light;
@@ -62,3 +60,10 @@ D3DXMATRIXA16* D3DXMatrixInverse(D3DXMATRIXA16*, float*, const D3DXMATRIXA16*);
 D3DXVECTOR3* D3DXVec3TransformCoord(D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXMATRIXA16*);
 D3DXPLANE* D3DXPlaneFromPoints(D3DXPLANE*, const D3DXVECTOR3*, const D3DXVECTOR3*, const D3DXVECTOR3*);
 D3DXVECTOR3* D3DXPlaneIntersectLine(D3DXVECTOR3*, const D3DXPLANE*, const D3DXVECTOR3*, const D3DXVECTOR3*);
+void D3DXMatrixRotationYawPitchRoll(D3DXMATRIXA16*, float, float, float);
+inline void D3DXMatrixScaling(D3DXMATRIXA16* m, float x, float y, float z)
+{ *m = {}; m->_11 = x; m->_22 = y; m->_33 = z; }
+inline void D3DXMatrixTranslation(D3DXMATRIXA16* m, float x, float y, float z)
+{ *m = {}; m->_41 = x; m->_42 = y; m->_43 = z; }
+void D3DXMatrixPerspectiveFovLH(D3DXMATRIXA16*, float, float, float, float);
+void D3DXVec3Normalize(D3DXVECTOR3*, const D3DXVECTOR3*);
