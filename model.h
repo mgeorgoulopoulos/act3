@@ -341,7 +341,7 @@ public:
 	D3DXMATRIXA16		Transform;
 
 	// Constructor
-	MeshBillBoard();
+	MeshBillboard();
 
 	// Methods
 	int		Init(PDIRECT3DDEVICE9 pDevice , unsigned long num_particles);
