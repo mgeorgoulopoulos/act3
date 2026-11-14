@@ -3355,7 +3355,7 @@ void Scene3DS::Release()
 		{
 			ObjectList[x].Release();
 		}
-		free(ObjectList);
+		delete[] ObjectList;
 	}
 }
 
@@ -3879,7 +3879,8 @@ int	MeshBillboard::Render(PDIRECT3DDEVICE9 pDevice)
 void MeshBillboard::Release()
 {
 	// free memory
-	if (ParticleList) delete ParticleList;
+	delete[] ParticleList;
+	free(VertexList);
 	if (pVB) pVB->Release();
 }
 
