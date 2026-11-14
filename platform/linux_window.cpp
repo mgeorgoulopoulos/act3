@@ -1,0 +1,88 @@
+#include <GL/glx.h>
+#include <X11/keysym.h>
+#include <cstdio>
+
+namespace {
+int reportError(const char* message)
+{
+    std::fprintf(stderr, "ACT3: %s\n", message);
+    return 1;
+}
+
+int runWindow(Display* display)
+{
+    const int screen = DefaultScreen(display);
+    int attributes[] = {GLX_RGBA, GLX_DOUBLEBUFFER, GLX_RED_SIZE, 8,
+        GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, GLX_DEPTH_SIZE, 24, None};
+    XVisualInfo* visual = glXChooseVisual(display, screen, attributes);
+    if (!visual)
+        return reportError("Could not find a suitable OpenGL visual.");
+
+    const Window root = RootWindow(display, screen);
+    XSetWindowAttributes settings{};
+    settings.colormap = XCreateColormap(display, root, visual->visual, AllocNone);
+    settings.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
+    const Window window = XCreateWindow(display, root, 0, 0, 800, 600, 0,
+        visual->depth, InputOutput, visual->visual,
+        CWColormap | CWEventMask, &settings);
+    GLXContext context = glXCreateContext(display, visual, nullptr, True);
+    XFree(visual);
+
+    int result = 0;
+    bool windowExists = true;
+    if (context && glXMakeCurrent(display, window, context)) {
+        const Atom protocols = XInternAtom(display, "WM_PROTOCOLS", False);
+        Atom close = XInternAtom(display, "WM_DELETE_WINDOW", False);
+        XSetWMProtocols(display, window, &close, 1);
+        XStoreName(display, window, "ACT3 | OpenGL");
+        XMapWindow(display, window);
+        glClearColor(0.05f, 0.09f, 0.18f, 1.0f);
+
+        bool running = true;
+        while (running) {
+            XEvent event{};
+            XNextEvent(display, &event);
+            switch (event.type) {
+            case Expose:
+            case ConfigureNotify:
+                glClear(GL_COLOR_BUFFER_BIT);
+                glXSwapBuffers(display, window);
+                break;
+            case KeyPress:
+                running = XLookupKeysym(&event.xkey, 0) != XK_Escape;
+                break;
+            case ClientMessage:
+                if (event.xclient.message_type == protocols &&
+                    event.xclient.format == 32 &&
+                    static_cast<Atom>(event.xclient.data.l[0]) == close)
+                    running = false;
+                break;
+            case DestroyNotify:
+                windowExists = false;
+                running = false;
+                break;
+            }
+        }
+        glXMakeCurrent(display, None, nullptr);
+    } else {
+        result = reportError("Could not initialize OpenGL.");
+    }
+
+    if (context)
+        glXDestroyContext(display, context);
+    if (windowExists)
+        XDestroyWindow(display, window);
+    XFreeColormap(display, settings.colormap);
+    return result;
+}
+}
+
+int main()
+{
+    Display* display = XOpenDisplay(nullptr);
+    if (!display)
+        return reportError("Could not connect to the X display.");
+    const int result = runWindow(display);
+    XCloseDisplay(display);
+    return result;
+}
