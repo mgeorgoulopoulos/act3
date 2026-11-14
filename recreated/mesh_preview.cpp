@@ -2,6 +2,9 @@
 #include "../compatibility/d3d9/indexed_draw.h"
 #include <cassert>
 #include "../model.h"
+#include "../TextureManager.h"
+
+extern TextureManager TexMan;
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -166,4 +169,29 @@ void preview::draw(int width, int height)
     glDisable(GL_NORMALIZE);
     glDisable(GL_LIGHTING);
     glDisable(GL_LIGHT0);
+
+    char loading[] = "loading.png";
+    TexMan.SetTexture(&device, 0, loading);
+    if (!glIsEnabled(GL_TEXTURE_2D))
+        return;
+    glDisable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, width, height, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glColor3f(1, 1, 1);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0, 0); glVertex2i(12, 12);
+    glTexCoord2f(1, 0); glVertex2i(172, 12);
+    glTexCoord2f(1, 1); glVertex2i(172, 92);
+    glTexCoord2f(0, 1); glVertex2i(12, 92);
+    glEnd();
+    TexMan.SetNoTexture(&device);
+}
+
+void preview::releaseTextures()
+{
+    TexMan.Release();
+    TexMan.pFirstEntry = nullptr;
 }

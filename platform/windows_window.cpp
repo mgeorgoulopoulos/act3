@@ -77,6 +77,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
             SwapBuffers(dc);
         }
         result = received == -1 ? 1 : static_cast<int>(message.wParam);
+        preview::releaseTextures();
         wglMakeCurrent(nullptr, nullptr);
     } else {
         result = reportError("Could not initialize OpenGL.");

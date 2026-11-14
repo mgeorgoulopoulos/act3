@@ -69,6 +69,7 @@ int runWindow(Display* display)
                 break;
             }
         }
+        preview::releaseTextures();
         glXMakeCurrent(display, None, nullptr);
     } else {
         result = reportError("Could not initialize OpenGL.");

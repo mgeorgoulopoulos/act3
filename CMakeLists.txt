@@ -3,13 +3,14 @@ project(ACT3 LANGUAGES CXX)
 
 if(WIN32)
     add_executable(act3 WIN32 platform/windows_window.cpp)
-    target_link_libraries(act3 PRIVATE opengl32 gdi32 user32)
+    target_link_libraries(act3 PRIVATE opengl32 gdi32 user32 windowscodecs ole32)
     set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT act3)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     find_package(X11 REQUIRED)
+    find_package(PNG REQUIRED)
     find_package(OpenGL REQUIRED COMPONENTS OpenGL GLX)
     add_executable(act3 platform/linux_window.cpp)
-    target_link_libraries(act3 PRIVATE X11::X11 OpenGL::OpenGL OpenGL::GLX)
+    target_link_libraries(act3 PRIVATE X11::X11 OpenGL::OpenGL OpenGL::GLX PNG::PNG)
 else()
     message(FATAL_ERROR "ACT3 supports Windows and Linux.")
 endif()
@@ -40,7 +41,8 @@ extract_model_method(act3_material_set "void Material::Set(" "int MeshIso::Creat
 configure_file(recreated/model_renderer.cpp.in generated/model_renderer.cpp @ONLY)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")
-target_sources(act3 PRIVATE 3ds.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/model_renderer.cpp")
+target_sources(act3 PRIVATE 3ds.cpp TextureManager.cpp compatibility/d3dx/texture.cpp
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/model_renderer.cpp")
 target_include_directories(act3 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3/data/geometry"
@@ -48,3 +50,5 @@ set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3
 target_include_directories(act3 PRIVATE compatibility/d3dx)
 configure_file("${ACT3_GEOMETRY_DIR}/eggplant.3ds" assets/eggplant.3ds COPYONLY)
 target_compile_definitions(act3 PRIVATE ACT3_MESH_PATH="${CMAKE_CURRENT_BINARY_DIR}/assets/eggplant.3ds")
+configure_file("${ACT3_GEOMETRY_DIR}/../textures/loading.png" assets/textures/loading.png COPYONLY)
+target_compile_definitions(act3 PRIVATE ACT3_TEXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/assets/textures")

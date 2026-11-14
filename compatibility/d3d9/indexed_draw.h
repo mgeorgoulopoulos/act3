@@ -11,7 +11,10 @@ struct Material {
     Color Diffuse, Ambient, Specular, Emissive;
     float Power;
 };
-struct BaseTexture;
+struct BaseTexture {
+    unsigned name;
+    void Release();
+};
 using HRESULT = std::int32_t;
 constexpr HRESULT D3D_OK = 0;
 constexpr HRESULT D3DERR_INVALIDCALL = -2005530516;
@@ -21,8 +24,8 @@ constexpr unsigned D3DFVF_NORMAL = 0x010;
 constexpr unsigned D3DFVF_TEX1 = 0x100;
 constexpr unsigned D3DUSAGE_WRITEONLY = 0x008;
 enum PrimitiveType { D3DPT_TRIANGLELIST = 4 };
-enum Pool { D3DPOOL_SYSTEMMEM = 2 };
-enum Format { D3DFMT_INDEX16 = 101 };
+enum Pool { D3DPOOL_DEFAULT = 0, D3DPOOL_SYSTEMMEM = 2 };
+enum Format { D3DFMT_INDEX16 = 101, D3DFMT_DXT1 = 0x31545844 };
 enum TransformState { D3DTS_VIEW = 2, D3DTS_PROJECTION = 3, D3DTS_WORLD = 256 };
 
 template<class Element>

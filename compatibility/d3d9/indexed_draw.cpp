@@ -99,10 +99,13 @@ HRESULT Device::SetMaterial(const Material* material)
 
 HRESULT Device::SetTexture(unsigned stage, BaseTexture* texture)
 {
-    if (stage != 0 || texture)
+    if (stage != 0)
         return D3DERR_INVALIDCALL;
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glDisable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture ? texture->name : 0);
+    if (texture)
+        glEnable(GL_TEXTURE_2D);
+    else
+        glDisable(GL_TEXTURE_2D);
     return D3D_OK;
 }
 
