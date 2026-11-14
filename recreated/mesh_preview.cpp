@@ -30,6 +30,7 @@ static_assert(sizeof(MODEL_VERTEX) == 8 * sizeof(float) &&
     offsetof(MODEL_VERTEX, nx) == 3 * sizeof(float) &&
     offsetof(MODEL_VERTEX, tu) == 6 * sizeof(float), "Unexpected MODEL_VERTEX layout");
 Scene3DS scene{};
+Scene3DS room{};
 Mesh3DS* meshes[2]{};
 Material* materials[2]{};
 const auto placements = preview::eggplantPlacements();
@@ -37,6 +38,57 @@ CameraSequence camera;
 static_assert(sizeof(CameraShot) == 28, "Unexpected camera record layout");
 std::chrono::steady_clock::time_point playbackStart;
 LPDIRECT3DCUBETEXTURE9 eggplantCube = nullptr;
+
+void drawRoom(d3d9::Device& device)
+{
+    // Load after the GL context is current so the S3D loader can upload circuit.png.
+    if (!room.ObjectList) {
+        char path[] = ACT3_ROOM_PATH;
+        if (!room.LoadFromS3D(path, &device)) {
+            WriteToLog("Could not load c_room.s3d.");
+            return;
+        }
+    }
+
+    d3d9::Matrix transform;
+    transform._11 = transform._22 = transform._33 = 400;
+    transform._42 = 50;
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glFrontFace(GL_CCW);
+    glCullFace(GL_BACK);
+    glEnable(GL_CULL_FACE);
+    glColor3f(1, 1, 1);
+    for (unsigned i = 0; i < room.NumObjects; ++i) {
+        auto& mesh = room.ObjectList[i];
+        if (auto* material = room.MaMa.GetMaterial(mesh.MaterialName)) {
+            material->Set(&device, nullptr);
+            mesh.Transform = transform;
+            const auto rendered = mesh.Render(&device);
+            assert(rendered);
+        }
+    }
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+    glEnable(GL_LIGHTING);
+}
+
+void releaseScene(Scene3DS& loaded)
+{
+    for (unsigned i = 0; i < loaded.NumObjects; ++i) {
+        auto& mesh = loaded.ObjectList[i];
+        if (mesh.pVB) mesh.pVB->Release();
+        if (mesh.pIB) mesh.pIB->Release();
+        std::free(mesh.VertexList);
+        std::free(mesh.IndexList);
+    }
+    delete[] loaded.ObjectList;
+    std::free(loaded.MaMa.MaterialList);
+    loaded.ObjectList = nullptr;
+    loaded.NumObjects = 0;
+    loaded.MaMa.MaterialList = nullptr;
+}
 }
 
 bool preview::load()
@@ -91,6 +143,7 @@ void preview::draw(int width, int height)
     camera.Cerp(static_cast<unsigned long>(elapsed % duration));
     camera.UpdateViewMatrix(&device);
     device.SetTransform(d3d9::D3DTS_PROJECTION, &projection);
+    drawRoom(device);
     if (!eggplantCube) {
         const auto result = loadEggplantCubemap(&device, eggplantCube);
         assert(result == d3d9::D3D_OK);
@@ -138,15 +191,8 @@ void preview::releaseTextures()
         eggplantCube->Release();
         eggplantCube = nullptr;
     }
-    for (unsigned i = 0; i < scene.NumObjects; ++i) {
-        auto& mesh = scene.ObjectList[i];
-        if (mesh.pVB) mesh.pVB->Release();
-        if (mesh.pIB) mesh.pIB->Release();
-        std::free(mesh.VertexList);
-        std::free(mesh.IndexList);
-    }
-    delete[] scene.ObjectList;
-    std::free(scene.MaMa.MaterialList);
+    releaseScene(room);
+    releaseScene(scene);
     TexMan.Release();
     TexMan.pFirstEntry = nullptr;
 }
