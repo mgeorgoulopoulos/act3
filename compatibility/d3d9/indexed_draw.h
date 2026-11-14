@@ -83,6 +83,20 @@ public:
     HRESULT SetIndices(IndexBuffer* buffer);
     HRESULT SetFVF(unsigned format) { fvf = format; return D3D_OK; }
     HRESULT SetTransform(TransformState state, const Matrix* matrix);
+    HRESULT BeginScene()
+    {
+        if (inScene)
+            return D3DERR_INVALIDCALL;
+        inScene = true;
+        return D3D_OK;
+    }
+    HRESULT EndScene()
+    {
+        if (!inScene)
+            return D3DERR_INVALIDCALL;
+        inScene = false;
+        return D3D_OK;
+    }
     HRESULT DrawIndexedPrimitive(PrimitiveType type, int baseVertex, unsigned minVertex,
         unsigned vertexCount, unsigned startIndex, unsigned primitiveCount) const;
 
@@ -93,5 +107,6 @@ private:
     unsigned stride = 0;
     unsigned fvf = 0;
     Matrix world, view, projection;
+    bool inScene = false;
 };
 }

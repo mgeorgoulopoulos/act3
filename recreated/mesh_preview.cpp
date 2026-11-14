@@ -1,7 +1,7 @@
 #include "mesh_preview.h"
 #include "../compatibility/d3d9/indexed_draw.h"
 #include <cassert>
-#include "../fvf.h"
+#include "../model.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -173,16 +173,17 @@ void preview::draw(int width, int height)
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glColor3f(0.79f, 0.57f, 1.0f);
     d3d9::Device device;
-    device.SetTransform(d3d9::D3DTS_WORLD, &world);
     device.SetTransform(d3d9::D3DTS_VIEW, &view);
     device.SetTransform(d3d9::D3DTS_PROJECTION, &projection);
-    device.SetFVF(FVF_MODEL);
     for (const auto& mesh : drawMeshes) {
-        device.SetStreamSource(0, mesh.vertices.get(), 0, sizeof(MODEL_VERTEX));
-        device.SetIndices(mesh.indices.get());
-        const auto result = device.DrawIndexedPrimitive(d3d9::D3DPT_TRIANGLELIST,
-            0, 0, mesh.vertexCount, 0, mesh.primitiveCount);
-        assert(result == d3d9::D3D_OK);
+        Mesh3DS historical;
+        historical.Transform = world;
+        historical.pVB = mesh.vertices.get();
+        historical.pIB = mesh.indices.get();
+        historical.NumVertices = static_cast<unsigned short>(mesh.vertexCount);
+        historical.NumIndices = static_cast<unsigned short>(mesh.primitiveCount * 3);
+        const int rendered = historical.Render(&device);
+        assert(rendered);
     }
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

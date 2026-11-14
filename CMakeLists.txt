@@ -16,6 +16,29 @@ endif()
 
 target_compile_features(act3 PRIVATE cxx_std_11)
 target_sources(act3 PRIVATE recreated/mesh_preview.cpp compatibility/d3d9/indexed_draw.cpp)
+# Build the original entry points until the remaining model.cpp methods can
+# compile against the compatibility layer.
+set(model_source "${CMAKE_CURRENT_SOURCE_DIR}/model.cpp")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${model_source}")
+file(READ "${model_source}" model_code)
+function(extract_model_method output start_marker end_marker)
+    string(FIND "${model_code}" "${start_marker}" start)
+    string(FIND "${model_code}" "${end_marker}" end)
+    if(start LESS 0 OR end LESS_EQUAL start)
+        message(FATAL_ERROR "Cannot locate historical method: ${start_marker}")
+    endif()
+    math(EXPR length "${end} - ${start}")
+    string(SUBSTRING "${model_code}" ${start} ${length} method)
+    set(${output} "${method}" PARENT_SCOPE)
+endfunction()
+extract_model_method(act3_mesh_constructor "Mesh3DS::Mesh3DS()" "void Mesh3DS::Twist(")
+extract_model_method(act3_mesh_render "int Mesh3DS::Render(" "int Mesh3DS::BatchRender(")
+configure_file(recreated/model_renderer.cpp.in generated/model_renderer.cpp @ONLY)
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
+    "#include \"compatibility/d3dx/d3dx9.h\"\n")
+target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/model_renderer.cpp")
+target_include_directories(act3 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3/data/geometry"
     CACHE PATH "Directory containing the original ACT3 geometry")
 add_executable(act3_export_eggplant recreated/export_eggplant.cpp 3ds.cpp)

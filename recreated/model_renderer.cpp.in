@@ -1,0 +1,14 @@
+#include "model.h"
+
+using d3d9::D3DTS_WORLD;
+using d3d9::D3DPT_TRIANGLELIST;
+constexpr bool FAILED(d3d9::HRESULT result) { return result < 0; }
+
+@act3_mesh_constructor@
+@act3_mesh_render@
+
+void WriteToLog(const char* message)
+{
+    fputs(message, stderr);
+    fputc('\n', stderr);
+}
