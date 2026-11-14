@@ -71,6 +71,30 @@ bool extra::applyEggplantCamera(d3d9::Device& device, unsigned milliseconds)
         view._41=-dot(rolledRight,eye);
         view._42=-dot(rolledUp,eye);
         view._43=-dot(forward,eye);
+        // Blend into the recorded pose over the last two seconds of the wide shot.
+        if (time >= harpStartMs - 2000) {
+            d3d9::Matrix recorded;
+            device.GetTransform(d3d9::D3DTS_VIEW, &recorded);
+            const Vector3 recordedRight{recorded._11, recorded._21, recorded._31};
+            const Vector3 recordedUp{recorded._12, recorded._22, recorded._32};
+            const Vector3 recordedForward{recorded._13, recorded._23, recorded._33};
+            const Vector3 recordedEye{
+                -recorded._41*recordedRight.x-recorded._42*recordedUp.x-recorded._43*recordedForward.x,
+                -recorded._41*recordedRight.y-recorded._42*recordedUp.y-recorded._43*recordedForward.y,
+                -recorded._41*recordedRight.z-recorded._42*recordedUp.z-recorded._43*recordedForward.z};
+            const float p = (time - (harpStartMs - 2000)) / 2000.f;
+            const float weight = p*p*(3-2*p);
+            const auto position = mix(eye, recordedEye, weight);
+            const auto f = unit(mix(forward, recordedForward, weight));
+            const auto r = unit(cross(mix(rolledUp, recordedUp, weight), f));
+            const auto u = cross(f,r);
+            view._11=r.x; view._21=r.y; view._31=r.z;
+            view._12=u.x; view._22=u.y; view._32=u.z;
+            view._13=f.x; view._23=f.y; view._33=f.z;
+            view._41=-dot(r,position);
+            view._42=-dot(u,position);
+            view._43=-dot(f,position);
+        }
         return device.SetTransform(d3d9::D3DTS_VIEW, &view) == d3d9::D3D_OK;
     }
     return false;
