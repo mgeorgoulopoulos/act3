@@ -52,6 +52,13 @@ string(REGEX MATCH "D3DXCreateCubeTextureFromFile[(][^)]*[)]"
 if(NOT eggplant_cube_call)
     message(FATAL_ERROR "Cannot locate EggplantScene cubemap load")
 endif()
+string(REGEX MATCHALL "#define[ \t]+(EGG_DISTANCE|NUM_ROWS|EGG_SHIFT)[ \t]+[^\r\n]+"
+    eggplant_grid_defines "${eggplant_code}")
+list(LENGTH eggplant_grid_defines eggplant_grid_define_count)
+if(NOT eggplant_grid_define_count EQUAL 3)
+    message(FATAL_ERROR "Cannot locate EggplantScene grid constants")
+endif()
+string(JOIN "\n" eggplant_grid_defines ${eggplant_grid_defines})
 configure_file(recreated/eggplant_cubemap.cpp.in generated/eggplant_cubemap.cpp @ONLY)
 target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/eggplant_cubemap.cpp")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"

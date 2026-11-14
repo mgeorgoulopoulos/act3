@@ -31,6 +31,7 @@ Scene3DS scene{};
 Mesh3DS* meshes[2]{};
 Material* materials[2]{};
 Vertex center{};
+const auto placements = preview::eggplantPlacements();
 float radius = 0;
 LPDIRECT3DCUBETEXTURE9 eggplantCube = nullptr;
 }
@@ -66,6 +67,17 @@ bool preview::load()
         }
     }
 
+    const auto meshLow = low;
+    const auto meshHigh = high;
+    for (int axis = 0; axis < 3; ++axis) {
+        low[axis] += placements.front().m[3][axis];
+        high[axis] += placements.front().m[3][axis];
+    }
+    for (const auto& placement : placements)
+        for (int axis = 0; axis < 3; ++axis) {
+            low[axis] = (std::min)(low[axis], meshLow[axis] + placement.m[3][axis]);
+            high[axis] = (std::max)(high[axis], meshHigh[axis] + placement.m[3][axis]);
+        }
     radius = 0;
     for (unsigned axis = 0; axis < 3; ++axis) {
         center[axis] = (high[axis] + low[axis]) * 0.5f;
@@ -132,9 +144,11 @@ void preview::draw(int width, int height)
             d3d9::D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
     for (unsigned i = 0; i < 2; ++i) {
         materials[i]->Set(&device, eggplantCube);
-        meshes[i]->Transform = world;
-        const int rendered = meshes[i]->Render(&device);
-        assert(rendered);
+        for (const auto& placement : placements) {
+            meshes[i]->Transform = placement * world;
+            const int rendered = meshes[i]->Render(&device);
+            assert(rendered);
+        }
     }
     device.SetTextureStageState(0, d3d9::D3DTSS_TEXCOORDINDEX,
         d3d9::D3DTSS_TCI_PASSTHRU);
