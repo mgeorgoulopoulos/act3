@@ -71,7 +71,6 @@ void drawRoom(d3d9::Device& device)
     }
     glDisable(GL_CULL_FACE);
     glDisable(GL_BLEND);
-    glEnable(GL_LIGHTING);
 }
 
 void drawEggplants(d3d9::Device& device, bool reflected)
@@ -162,6 +161,10 @@ void preview::draw(int width, int height)
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
     glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+    // D3D9 adds specular after texture modulation when SPECULARENABLE is set.
+    constexpr GLenum lightModelColorControl = 0x81f8;
+    constexpr GLint separateSpecularColor = 0x81fa;
+    glLightModeli(lightModelColorControl, separateSpecularColor);
     glEnable(GL_LIGHT0);
     glEnable(GL_LIGHTING);
     glEnable(GL_NORMALIZE);
@@ -177,6 +180,7 @@ void preview::draw(int width, int height)
         assert(result == d3d9::D3D_OK);
     }
     drawEggplants(device, true);
+    // Scene1 disables lighting for the floor and leaves it off for the main grid.
     drawRoom(device);
     drawEggplants(device, false);
     glDisable(GL_NORMALIZE);
