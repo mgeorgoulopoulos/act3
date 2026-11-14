@@ -147,20 +147,35 @@ void preview::draw(int width, int height)
     const double y = aspect < 1 ? 1 / aspect : 1;
     glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(-x, x, -y, y, -2, 2);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glRotatef(-65, 1, 0, 0);
-    glRotatef(25, 0, 0, 1);
     const float scale = 0.86f / radius;
-    glScalef(scale, scale, scale);
-    glTranslatef(-center[0], -center[1], -center[2]);
+    d3d9::Matrix world;
+    for (int axis = 0; axis < 3; ++axis) {
+        world.m[axis][axis] = scale;
+        world.m[3][axis] = -center[axis] * scale;
+    }
+    constexpr float radians = 3.14159265358979323846f / 180;
+    const float pitch = -65 * radians;
+    const float yaw = 25 * radians;
+    d3d9::Matrix pitchRotation, yawRotation;
+    pitchRotation.m[1][1] = pitchRotation.m[2][2] = std::cos(pitch);
+    pitchRotation.m[1][2] = std::sin(pitch);
+    pitchRotation.m[2][1] = -pitchRotation.m[1][2];
+    yawRotation.m[0][0] = yawRotation.m[1][1] = std::cos(yaw);
+    yawRotation.m[0][1] = std::sin(yaw);
+    yawRotation.m[1][0] = -yawRotation.m[0][1];
+    const auto view = yawRotation * pitchRotation;
+    d3d9::Matrix projection;
+    projection.m[0][0] = static_cast<float>(1 / x);
+    projection.m[1][1] = static_cast<float>(1 / y);
+    projection.m[2][2] = -0.25f;
+    projection.m[3][2] = 0.5f;
     glEnable(GL_DEPTH_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glColor3f(0.79f, 0.57f, 1.0f);
     d3d9::Device device;
+    device.SetTransform(d3d9::D3DTS_WORLD, &world);
+    device.SetTransform(d3d9::D3DTS_VIEW, &view);
+    device.SetTransform(d3d9::D3DTS_PROJECTION, &projection);
     device.SetFVF(FVF_MODEL);
     for (const auto& mesh : drawMeshes) {
         device.SetStreamSource(0, mesh.vertices.get(), 0, sizeof(MODEL_VERTEX));

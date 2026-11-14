@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include "../d3dx/matrix.h"
 
 namespace d3d9 {
 using HRESULT = std::int32_t;
@@ -16,6 +17,7 @@ constexpr unsigned D3DUSAGE_WRITEONLY = 0x008;
 enum PrimitiveType { D3DPT_TRIANGLELIST = 4 };
 enum Pool { D3DPOOL_SYSTEMMEM = 2 };
 enum Format { D3DFMT_INDEX16 = 101 };
+enum TransformState { D3DTS_VIEW = 2, D3DTS_PROJECTION = 3, D3DTS_WORLD = 256 };
 
 template<class Element>
 class Buffer {
@@ -80,6 +82,7 @@ public:
         unsigned vertexStride);
     HRESULT SetIndices(IndexBuffer* buffer);
     HRESULT SetFVF(unsigned format) { fvf = format; return D3D_OK; }
+    HRESULT SetTransform(TransformState state, const Matrix* matrix);
     HRESULT DrawIndexedPrimitive(PrimitiveType type, int baseVertex, unsigned minVertex,
         unsigned vertexCount, unsigned startIndex, unsigned primitiveCount) const;
 
@@ -89,5 +92,6 @@ private:
     unsigned streamOffset = 0;
     unsigned stride = 0;
     unsigned fvf = 0;
+    Matrix world, view, projection;
 };
 }

@@ -80,6 +80,19 @@ HRESULT Device::SetIndices(IndexBuffer* buffer)
     return D3D_OK;
 }
 
+HRESULT Device::SetTransform(TransformState state, const Matrix* matrix)
+{
+    if (!matrix)
+        return D3DERR_INVALIDCALL;
+    switch (state) {
+    case D3DTS_WORLD: world = *matrix; break;
+    case D3DTS_VIEW: view = *matrix; break;
+    case D3DTS_PROJECTION: projection = *matrix; break;
+    default: return D3DERR_INVALIDCALL;
+    }
+    return D3D_OK;
+}
+
 HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     unsigned minVertex, unsigned vertexCount, unsigned startIndex,
     unsigned primitiveCount) const
@@ -113,6 +126,17 @@ HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     }
 
     const auto* firstVertex = vertices + (streamOffset + base * stride) / sizeof(float);
+    // Convert D3D clip depth [0,w] to OpenGL clip depth [-w,w].
+    Matrix clip;
+    clip.m[2][2] = 2;
+    clip.m[3][2] = -1;
+    const auto glProjection = projection * clip;
+    const auto modelView = world * view;
+    // OpenGL reads the same memory as column-major, transposing both matrices.
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(&glProjection.m[0][0]);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixf(&modelView.m[0][0]);
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(3, GL_FLOAT, static_cast<GLsizei>(stride), firstVertex);
     if (model) {
