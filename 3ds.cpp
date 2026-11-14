@@ -3,6 +3,7 @@
 
 #include "3ds.h"
 #include "log.h"
+#include <cstdint>
 
 /**------------------------------------------------------*/
 /* Function: SkipBytes()                                 */
@@ -50,7 +51,7 @@ int SkipBytes(unsigned long num_of_bytes , FILE* f)
 int GoToChunk(unsigned short c , FILE* f)
 {
 	unsigned short chunk_id;
-	unsigned long chunk_length;
+	std::uint32_t chunk_length;
 
 	// Read the next chunks id
 	fread(&chunk_id , sizeof(unsigned short) , 1, f);
@@ -60,7 +61,7 @@ int GoToChunk(unsigned short c , FILE* f)
 	{
 
 		// Read the number of bytes to jump
-		fread(&chunk_length , sizeof(unsigned long) , 1 , f);
+		fread(&chunk_length , sizeof(chunk_length) , 1 , f);
 
 		// Skip this chunk
 		if (!SkipBytes(chunk_length-6 , f)) return 0;
@@ -71,7 +72,7 @@ int GoToChunk(unsigned short c , FILE* f)
 	}
 
 	// Get the chunk's size
-	fread(&chunk_length , sizeof(unsigned long) , 1 , f);
+	fread(&chunk_length , sizeof(chunk_length) , 1 , f);
 
 	return chunk_length;
 }
@@ -109,7 +110,7 @@ int ExportObject(char* filename , FILE* f)
 	fread(&num_of_vertices , sizeof(unsigned short) , 1 , f);
 
 	// Allocate space for the vertices
-	COMMON_VERTEX* pVertices = (COMMON_VERTEX*) malloc(num_of_vertices*sizeof(COMMON_VERTEX));
+	COMMON_VERTEX* pVertices = (COMMON_VERTEX*) calloc(num_of_vertices, sizeof(COMMON_VERTEX));
 
 	// Copy the vertices
 	for (unsigned int index = 0;index<num_of_vertices;index++)
@@ -137,7 +138,7 @@ int ExportObject(char* filename , FILE* f)
 
 	// Copy the indices
 	unsigned short temp_short;
-	for (index = 0;index<num_of_triangles;index++)
+	for (unsigned int index = 0;index<num_of_triangles;index++)
 	{
 		// Read the 3 vertices of the face
 		fread(&temp_short , sizeof(unsigned short) , 1 , f);
@@ -196,8 +197,8 @@ int ReadColorChunk(float* r , float* g , float* b , FILE* f)
 	// First see what chunk this is
 	unsigned short chunk_id;
 	fread(&chunk_id , sizeof(unsigned short) , 1 , f);
-	unsigned long chunk_length;
-	fread(&chunk_length , sizeof(unsigned long) , 1 , f);
+	std::uint32_t chunk_length;
+	fread(&chunk_length , sizeof(chunk_length) , 1 , f);
 
 	unsigned char cr,cg,cb;
 	float fr,fg,fb;
@@ -270,8 +271,8 @@ int ReadPercentChunk(float* p , FILE* f)
 	// First see what chunk this is
 	unsigned short chunk_id;
 	fread(&chunk_id , sizeof(unsigned short) , 1 , f);
-	unsigned long chunk_length;
-	fread(&chunk_length , sizeof(unsigned long) , 1 , f);
+	std::uint32_t chunk_length;
+	fread(&chunk_length , sizeof(chunk_length) , 1 , f);
 
 	unsigned short ip;
 	float fp;
@@ -319,7 +320,7 @@ int ReadPercentChunk(float* p , FILE* f)
 int SearchForChunkUntil(unsigned short c , unsigned short until, FILE*f)
 {
 	unsigned short chunk_id;
-	unsigned long chunk_length;
+	std::uint32_t chunk_length;
 
 	// Read the next chunks id
 	fread(&chunk_id , sizeof(unsigned short) , 1, f);
@@ -329,7 +330,7 @@ int SearchForChunkUntil(unsigned short c , unsigned short until, FILE*f)
 	{
 
 		// Read the number of bytes to jump
-		fread(&chunk_length , sizeof(unsigned long) , 1 , f);
+		fread(&chunk_length , sizeof(chunk_length) , 1 , f);
 
 		if (chunk_id == until)
 		{
@@ -345,7 +346,7 @@ int SearchForChunkUntil(unsigned short c , unsigned short until, FILE*f)
 	}
 
 	// Get the chunk's size
-	fread(&chunk_length , sizeof(unsigned long) , 1 , f);
+	fread(&chunk_length , sizeof(chunk_length) , 1 , f);
 
 	return chunk_length;
 }
