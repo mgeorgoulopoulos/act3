@@ -7,6 +7,13 @@
 
 namespace d3d9 {
 struct Color { float r, g, b, a; };
+enum LightType { D3DLIGHT_DIRECTIONAL = 3 };
+struct Light {
+    LightType Type;
+    Color Diffuse, Specular, Ambient;
+    struct { float x, y, z; } Direction;
+    float Range;
+};
 struct Material {
     Color Diffuse, Ambient, Specular, Emissive;
     float Power;
@@ -105,6 +112,8 @@ public:
     HRESULT SetFVF(unsigned format) { fvf = format; return D3D_OK; }
     HRESULT SetTransform(TransformState state, const Matrix* matrix);
     HRESULT GetTransform(TransformState state, Matrix* matrix) const;
+    HRESULT SetLight(unsigned index, const Light* light);
+    HRESULT LightEnable(unsigned index, int enable);
     HRESULT SetMaterial(const Material* material);
     HRESULT SetTexture(unsigned stage, BaseTexture* texture);
     HRESULT SetTextureStageState(unsigned stage, TextureStageState state, unsigned value);
@@ -133,6 +142,8 @@ private:
     unsigned stride = 0;
     unsigned fvf = 0;
     Matrix world, view, projection;
+    Light light0{};
+    bool light0Enabled = false;
     bool inScene = false;
     unsigned sourceBlend = D3DBLEND_ONE;
     unsigned destinationBlend = 1; // D3DBLEND_ZERO

@@ -152,18 +152,17 @@ void preview::draw(int width, int height)
     projection._43 = -nearPlane * projection._33;
     projection._44 = 0;
     device.SetRenderState(D3DRS_ZENABLE, 1);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    const GLfloat light[] = {-0.4f, 0.7f, 1.0f, 0.0f};
-    const GLfloat diffuse[] = {0.9f, 0.9f, 0.9f, 1};
-    const GLfloat specular[] = {0.1f, 0.1f, 0.1f, 1};
-    glLightfv(GL_LIGHT0, GL_POSITION, light);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+    D3DLIGHT9 light{};
+    light.Type = D3DLIGHT_DIRECTIONAL;
+    light.Diffuse = {0.9f, 0.9f, 0.9f, 1};
+    light.Specular = {0.1f, 0.1f, 0.1f, 1};
+    light.Direction = {0, 0, 1};
+    light.Range = 1000;
+    device.SetLight(0, &light);
+    device.LightEnable(0, TRUE);
     device.SetRenderState(D3DRS_AMBIENT, 0xffffffff);
     device.SetRenderState(D3DRS_LOCALVIEWER, 1);
     device.SetRenderState(D3DRS_SPECULARENABLE, 1);
-    glEnable(GL_LIGHT0);
     device.SetRenderState(D3DRS_LIGHTING, 1);
     glEnable(GL_NORMALIZE);
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -186,7 +185,6 @@ void preview::draw(int width, int height)
     drawEggplants(device, false, frustum);
     glDisable(GL_NORMALIZE);
     device.SetRenderState(D3DRS_LIGHTING, 0);
-    glDisable(GL_LIGHT0);
 
     char loading[] = "loading.png";
     TexMan.SetTexture(&device, 0, loading);

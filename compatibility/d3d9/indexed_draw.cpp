@@ -199,6 +199,22 @@ HRESULT Device::SetTransform(TransformState state, const Matrix* matrix)
     return D3D_OK;
 }
 
+HRESULT Device::SetLight(unsigned index, const Light* light)
+{
+    if (index != 0 || !light || light->Type != D3DLIGHT_DIRECTIONAL)
+        return D3DERR_INVALIDCALL;
+    light0 = *light;
+    return D3D_OK;
+}
+
+HRESULT Device::LightEnable(unsigned index, int enable)
+{
+    if (index != 0 || (enable && light0.Type != D3DLIGHT_DIRECTIONAL))
+        return D3DERR_INVALIDCALL;
+    light0Enabled = enable != 0;
+    return D3D_OK;
+}
+
 HRESULT Device::GetTransform(TransformState state, Matrix* matrix) const
 {
     if (!matrix)
@@ -255,6 +271,23 @@ HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(&glProjection.m[0][0]);
     glMatrixMode(GL_MODELVIEW);
+    if (light0Enabled) {
+        // D3D stores the direction of travel. OpenGL takes the direction to the light.
+        const GLfloat direction[] = {-light0.Direction.x, -light0.Direction.y,
+            -light0.Direction.z, 0};
+        glLoadMatrixf(&view.m[0][0]);
+        glLightfv(GL_LIGHT0, GL_POSITION, direction);
+        const auto apply = [](GLenum property, const Color& color) {
+            const GLfloat rgba[] = {color.r, color.g, color.b, color.a};
+            glLightfv(GL_LIGHT0, property, rgba);
+        };
+        apply(GL_AMBIENT, light0.Ambient);
+        apply(GL_DIFFUSE, light0.Diffuse);
+        apply(GL_SPECULAR, light0.Specular);
+        glEnable(GL_LIGHT0);
+    } else {
+        glDisable(GL_LIGHT0);
+    }
     glLoadMatrixf(&modelView.m[0][0]);
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(3, GL_FLOAT, static_cast<GLsizei>(stride), firstVertex);

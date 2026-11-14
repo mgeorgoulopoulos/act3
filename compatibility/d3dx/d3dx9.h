@@ -26,6 +26,8 @@ struct D3DXVECTOR3 {
 };
 struct D3DXPLANE { float a, b, c, d; };
 using D3DMATERIAL9 = d3d9::Material;
+using D3DLIGHT9 = d3d9::Light;
+using d3d9::D3DLIGHT_DIRECTIONAL;
 using IDirect3DBaseTexture9 = d3d9::BaseTexture;
 using LPDIRECT3DTEXTURE9 = d3d9::BaseTexture*;
 using LPDIRECT3DCUBETEXTURE9 = d3d9::BaseTexture*;
