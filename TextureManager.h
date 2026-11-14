@@ -42,7 +42,7 @@ public:
 
 	// Methods
 	TextureManager();
-	Release();
+	void Release();
 
 	int				LoadTexture(LPDIRECT3DDEVICE9 pDevice , 
 								char* filename);

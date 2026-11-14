@@ -38,7 +38,7 @@ int TextureEntry::Load(LPDIRECT3DDEVICE9 pDevice ,char* filename)
 	name[x] = 0;
 
 	char file[40];
-	char* prefix = "data\\textures\\";
+	const char* prefix = "data\\textures\\";
 
 	x=0;
 	while (prefix[x])
@@ -109,7 +109,7 @@ TextureManager::TextureManager()
 	pFirstEntry = NULL;
 }
 
-TextureManager::Release()
+void TextureManager::Release()
 {
 	TextureEntry *entry,*temp;
 	entry = pFirstEntry;

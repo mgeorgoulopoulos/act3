@@ -139,7 +139,7 @@ void Mesh3DS::TransformBoundingBox()
 int Mesh3DS::LoadFrom3DS(char* filename , char* object_name)
 {
 
-	FILE *input = fopen(filename,"r+b");
+	FILE *input = fopen(filename,"rb");
 
 	// See if the file is valid
 	if (!input)
@@ -161,8 +161,8 @@ int Mesh3DS::LoadFrom3DS(char* filename , char* object_name)
 		return 0;
 	}
 
-	unsigned long chunk_length;
-	fread(&chunk_length, sizeof(unsigned long) , 1, input);
+	std::uint32_t chunk_length;
+	fread(&chunk_length, sizeof(chunk_length) , 1, input);
 
 	// Go to the 3d editor chunk
 	if (!GoToChunk(CHUNK_3DEDITOR , input))
@@ -269,7 +269,7 @@ int Mesh3DS::LoadFrom3DS(char* filename , char* object_name)
 
 				// Copy the indices
 				unsigned short temp_short;
-				for (index = 0;index<num_of_triangles;index++)
+				for (unsigned int index = 0;index<num_of_triangles;index++)
 				{
 					// Read the 3 vertices of the face
 					fread(&temp_short , sizeof(unsigned short) , 1 , input);
@@ -323,7 +323,7 @@ int Mesh3DS::LoadFrom3DS(char* filename , char* object_name)
 
 				// Copy the indices
 				unsigned short temp_short;
-				for (index = 0;index<num_of_triangles;index++)
+				for (unsigned int index = 0;index<num_of_triangles;index++)
 				{
 					// Read the 3 vertices of the face
 					fread(&temp_short , sizeof(unsigned short) , 1 , input);
@@ -1945,7 +1945,7 @@ int Material::LoadFrom3DS(char* filename , char* material_name)
 
 	// Load a material
 	float r,g,b;
-	FILE *input = fopen(filename,"r+b");
+	FILE *input = fopen(filename,"rb");
 
 	// See if the file is valid
 	if (!input)
@@ -1963,8 +1963,8 @@ int Material::LoadFrom3DS(char* filename , char* material_name)
 		return 0;
 	}
 
-	unsigned long chunk_length;
-	fread(&chunk_length, sizeof(unsigned long) , 1, input);
+	std::uint32_t chunk_length;
+	fread(&chunk_length, sizeof(chunk_length) , 1, input);
 
 	// Go to the 3d editor chunk
 	if (!GoToChunk(CHUNK_3DEDITOR , input))
@@ -2065,7 +2065,7 @@ int Material::LoadFrom3DS(char* filename , char* material_name)
 				return 0;
 			}
 			// Read the power percent
-			float percent;
+			float percent = 0;
 			if (!ReadPercentChunk(&percent , input))
 			{
 				//printf("Couldnt load percent\n");
