@@ -160,8 +160,7 @@ bool ObjectInFrustum( CULLINFO* pCullInfo,
                      D3DXPLANE* pPlaneBounds )
 {
 
-    BYTE bOutside[8];
-    ZeroMemory( &bOutside, sizeof(bOutside) );
+    std::uint8_t bOutside[8]{};
 
     // Check boundary vertices against all 6 frustum planes, 
     // and store result (1 if outside) in a bitfield
@@ -261,7 +260,7 @@ bool ObjectInFrustum( CULLINFO* pCullInfo,
         pCullInfo->vecFrustum[0], pCullInfo->vecFrustum[4], pCullInfo->vecFrustum[5], pCullInfo->vecFrustum[1], // bottom
     };
     pEdge = &edge2[0][0];
-    for( iEdge = 0; iEdge < 12; iEdge++ )
+    for( INT iEdge = 0; iEdge < 12; iEdge++ )
     {
         pFace = &face2[0][0];
         for( INT iFace = 0; iFace < 6; iFace++ )
