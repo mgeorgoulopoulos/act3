@@ -2,6 +2,8 @@
 #include <windows.h>
 #include <GL/gl.h>
 #include "../recreated/mesh_preview.h"
+#include "../extra/mode.h"
+#include <cstring>
 
 namespace {
 constexpr char windowClass[] = "Act3OpenGLWindow";
@@ -30,8 +32,10 @@ int reportError(const char* message)
 }
 }
 
-int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
+int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
 {
+    extra::enabled = std::strcmp(args, "--extra") == 0;
+    SetProcessDPIAware();
     WNDCLASSA windowType{};
     windowType.style = CS_OWNDC;
     windowType.lpfnWndProc = windowProc;
@@ -41,8 +45,25 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
     if (!RegisterClassA(&windowType))
         return reportError("Could not register the window class.");
 
-    HWND window = CreateWindowA(windowClass, windowTitle, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, nullptr, nullptr, instance, nullptr);
+    RECT area{0, 0, 800, 600};
+    int x = CW_USEDEFAULT, y = CW_USEDEFAULT;
+    if (extra::enabled) {
+        POINT cursor{};
+        GetCursorPos(&cursor);
+        MONITORINFO monitor{};
+        monitor.cbSize = sizeof(monitor);
+        if (GetMonitorInfo(MonitorFromPoint(cursor, MONITOR_DEFAULTTOPRIMARY), &monitor)) {
+            const auto& bounds = monitor.rcMonitor;
+            area.right = (bounds.right - bounds.left) * 2 / 3;
+            area.bottom = (bounds.bottom - bounds.top) * 2 / 3;
+            x = bounds.left + (bounds.right - bounds.left - area.right) / 2;
+            y = bounds.top + (bounds.bottom - bounds.top - area.bottom) / 2;
+        }
+    }
+    AdjustWindowRect(&area, WS_OVERLAPPEDWINDOW, FALSE);
+    HWND window = CreateWindowA(windowClass, extra::enabled ? "ACT3 | Extra" : windowTitle,
+        WS_OVERLAPPEDWINDOW, x, y, area.right - area.left, area.bottom - area.top,
+        nullptr, nullptr, instance, nullptr);
     if (!window)
         return reportError("Could not create the window.");
 

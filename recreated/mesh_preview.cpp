@@ -1,4 +1,5 @@
 #include "mesh_preview.h"
+#include "../extra/mode.h"
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -49,6 +50,7 @@ void preview::draw(int width, int height)
         return;
     setSceneViewport(width, height);
     glViewport(0, 0, width, height);
+    device.SetProjectionAspectScale(extra::enabled ? (4.f * height) / (3.f * width) : 1.f);
     glEnable(GL_NORMALIZE);
     glColor3f(1, 1, 1);
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(

@@ -82,3 +82,4 @@ foreach(asset circuit.png metal.dds star.png lens1.png lens2.png lens3.png lens4
 endforeach()
 target_compile_definitions(act3 PRIVATE ACT3_ASSET_ROOT="${CMAKE_CURRENT_BINARY_DIR}/assets"
     ACT3_TEXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/assets/textures")
+configure_file(extra/textures/circuit.png assets/extra/textures/circuit.png COPYONLY)

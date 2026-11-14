@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <poll.h>
 #include "../recreated/mesh_preview.h"
+#include "../extra/mode.h"
+#include <cstring>
 
 namespace {
 int reportError(const char* message)
@@ -24,7 +26,9 @@ int runWindow(Display* display)
     XSetWindowAttributes settings{};
     settings.colormap = XCreateColormap(display, root, visual->visual, AllocNone);
     settings.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
-    const Window window = XCreateWindow(display, root, 0, 0, 800, 600, 0,
+    int width = extra::enabled ? DisplayWidth(display, screen) * 2 / 3 : 800;
+    int height = extra::enabled ? DisplayHeight(display, screen) * 2 / 3 : 600;
+    const Window window = XCreateWindow(display, root, 0, 0, width, height, 0,
         visual->depth, InputOutput, visual->visual,
         CWColormap | CWEventMask, &settings);
     GLXContext context = glXCreateContext(display, visual, nullptr, True);
@@ -41,13 +45,11 @@ int runWindow(Display* display)
         const Atom protocols = XInternAtom(display, "WM_PROTOCOLS", False);
         Atom close = XInternAtom(display, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(display, window, &close, 1);
-        XStoreName(display, window, "ACT3 | OpenGL");
+        XStoreName(display, window, extra::enabled ? "ACT3 | Extra" : "ACT3 | OpenGL");
         XMapWindow(display, window);
         glClearColor(0.05f, 0.09f, 0.18f, 1.0f);
 
         bool running = true;
-        int width = 800;
-        int height = 600;
         while (running) {
             if (!XPending(display)) {
                 pollfd connection{ConnectionNumber(display), POLLIN, 0};
@@ -98,8 +100,9 @@ int runWindow(Display* display)
 }
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    extra::enabled = argc == 2 && std::strcmp(argv[1], "--extra") == 0;
     Display* display = XOpenDisplay(nullptr);
     if (!display)
         return reportError("Could not connect to the X display.");
