@@ -1,4 +1,5 @@
 #include "mesh_preview.h"
+#include "../fvf.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -10,9 +11,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <cstring>
 #include <fstream>
-#include <iterator>
 #include <vector>
 
 namespace {
@@ -25,94 +24,36 @@ std::vector<Mesh> meshes;
 Vertex center{};
 float radius = 0;
 
-class Reader {
-public:
-    explicit Reader(std::istream& file)
-        : bytes(std::istreambuf_iterator<char>(file), {}) {}
-
-    bool read() const { return chunks(0, bytes.size(), nullptr); }
-
-private:
-    std::vector<unsigned char> bytes;
-
-    std::uint16_t word(std::size_t offset) const
-    {
-        return bytes[offset] | (bytes[offset + 1] << 8);
-    }
-
-    std::uint32_t dword(std::size_t offset) const
-    {
-        return word(offset) | (std::uint32_t(word(offset + 2)) << 16);
-    }
-
-    bool chunks(std::size_t pos, std::size_t end, Mesh* mesh,
-        unsigned depth = 0) const
-    {
-        if (depth > 16)
+bool readMesh(const char* path)
+{
+    std::ifstream file(path, std::ios::binary);
+    unsigned short count;
+    if (!file.read(reinterpret_cast<char*>(&count), sizeof(count)) || !count)
+        return false;
+    std::vector<COMMON_VERTEX> vertices(count);
+    if (!file.read(reinterpret_cast<char*>(vertices.data()),
+                   vertices.size() * sizeof(COMMON_VERTEX)) ||
+        !file.read(reinterpret_cast<char*>(&count), sizeof(count)) || !count || count % 3)
+        return false;
+    Mesh mesh;
+    mesh.indices.resize(count);
+    if (!file.read(reinterpret_cast<char*>(mesh.indices.data()),
+                   mesh.indices.size() * sizeof(unsigned short)))
+        return false;
+    for (auto index : mesh.indices)
+        if (index >= vertices.size())
             return false;
-        while (pos < end) {
-            if (end - pos < 6)
-                return false;
-            const auto id = word(pos);
-            const auto size = dword(pos + 2);
-            if (size < 6 || size > end - pos)
-                return false;
-            const auto next = pos + size;
-            pos += 6;
-            if (id == 0x4d4d || id == 0x3d3d || id == 0x4100) {
-                if (!chunks(pos, next, mesh, depth + 1))
-                    return false;
-            } else if (id == 0x4000) {
-                while (pos < next && bytes[pos] != 0)
-                    ++pos;
-                Mesh object;
-                if (pos == next || !chunks(pos + 1, next, &object, depth + 1))
-                    return false;
-                if (!object.indices.empty()) {
-                    for (auto index : object.indices)
-                        if (index >= object.vertices.size())
-                            return false;
-                    meshes.push_back(std::move(object));
-                }
-            } else if (mesh && (id == 0x4110 || id == 0x4120)) {
-                if (next - pos < 2)
-                    return false;
-                const auto count = word(pos);
-                pos += 2;
-                if (id == 0x4110) {
-                    if (count > (next - pos) / 12)
-                        return false;
-                    mesh->vertices.resize(count);
-                    for (auto& vertex : mesh->vertices) {
-                        for (auto& coordinate : vertex) {
-                            const auto bits = dword(pos);
-                            std::memcpy(&coordinate, &bits, sizeof(bits));
-                            if (!std::isfinite(coordinate))
-                                return false;
-                            pos += 4;
-                        }
-                    }
-                } else {
-                    if (count > (next - pos) / 8)
-                        return false;
-                    mesh->indices.clear();
-                    for (unsigned face = 0; face < count; ++face, pos += 8)
-                        for (unsigned corner = 0; corner < 3; ++corner)
-                            mesh->indices.push_back(word(pos + 2 * corner));
-                }
-            }
-            pos = next;
-        }
-        return true;
-    }
-};
+    for (const auto& v : vertices)
+        mesh.vertices.push_back({{v.x, v.y, v.z}});
+    meshes.push_back(std::move(mesh));
+    return true;
+}
 }
 
 bool preview::load()
 {
     meshes.clear();
-    std::ifstream file(ACT3_MESH_PATH, std::ios::binary);
-    if (!file || !Reader(file).read() || meshes.empty())
+    if (!readMesh(ACT3_STEM_PATH) || !readMesh(ACT3_EGG_PATH))
         return false;
     Vertex low = meshes.front().vertices.front();
     Vertex high = low;

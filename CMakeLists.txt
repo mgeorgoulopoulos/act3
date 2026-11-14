@@ -18,5 +18,16 @@ target_compile_features(act3 PRIVATE cxx_std_11)
 target_sources(act3 PRIVATE recreated/mesh_preview.cpp)
 set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3/data/geometry"
     CACHE PATH "Directory containing the original ACT3 geometry")
-configure_file("${ACT3_GEOMETRY_DIR}/eggplant.3ds" assets/eggplant.3ds COPYONLY)
-target_compile_definitions(act3 PRIVATE ACT3_MESH_PATH="${CMAKE_CURRENT_BINARY_DIR}/assets/eggplant.3ds")
+add_executable(act3_export_eggplant recreated/export_eggplant.cpp 3ds.cpp)
+target_include_directories(act3_export_eggplant PRIVATE compatibility/d3dx)
+target_include_directories(act3 PRIVATE compatibility/d3dx)
+set(stem "${CMAKE_CURRENT_BINARY_DIR}/assets/stem.mesh")
+set(egg "${CMAKE_CURRENT_BINARY_DIR}/assets/egg.mesh")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/assets")
+add_custom_command(OUTPUT "${stem}" "${egg}"
+    COMMAND act3_export_eggplant "${ACT3_GEOMETRY_DIR}/eggplant.3ds" "${stem}" "${egg}"
+    DEPENDS act3_export_eggplant "${ACT3_GEOMETRY_DIR}/eggplant.3ds"
+    VERBATIM)
+add_custom_target(act3_geometry DEPENDS "${stem}" "${egg}")
+add_dependencies(act3 act3_geometry)
+target_compile_definitions(act3 PRIVATE ACT3_STEM_PATH="${stem}" ACT3_EGG_PATH="${egg}")
