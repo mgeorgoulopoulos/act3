@@ -10,7 +10,7 @@ constexpr float pi = 3.14159265358979323846f;
 constexpr unsigned harpStartMs = 29186;
 const Shot shots[] = {
     // Pull back from the light and reveal the still figures below it.
-    {8, {{975,298,0}, {1000,300,0}, 0}, {{-430,410,-760}, {390,210,-100}, 0}},
+    {8, {{975,298,0}, {1000,300,0}, 0}, {{-125,128,-195}, {595,172,-15}, 0}},
     // Cut to a low lateral track, with plants at several depths.
     {16, {{-500,115,-440}, {180,143,-170}, -3}, {{-435,150,475}, {230,145,120}, 3}},
     // Cross the line from the light to the egg at the origin, then uncover it.
@@ -53,6 +53,12 @@ bool extra::applyEggplantCamera(d3d9::Device& device, unsigned milliseconds)
         const float phase = (seconds-start)/(shot.end-start);
         const float t = phase*phase*(3-2*phase);
         auto eye = mix(shot.from.eye, shot.to.eye, t);
+        if (start == 0) {
+            // Drop early, then pass alongside the near row at stem height.
+            const float descent = std::sin(pi * t);
+            eye.y -= 100 * descent;
+            eye.z -= 155 * descent;
+        }
         const auto target = mix(shot.from.target, shot.to.target, t);
         float roll = shot.from.roll+(shot.to.roll-shot.from.roll)*t;
         const auto forward = unit({target.x-eye.x,target.y-eye.y,target.z-eye.z});
@@ -98,4 +104,23 @@ bool extra::applyEggplantCamera(d3d9::Device& device, unsigned milliseconds)
         return device.SetTransform(d3d9::D3DTS_VIEW, &view) == d3d9::D3D_OK;
     }
     return false;
+}
+
+float extra::eggplantFovScale(unsigned milliseconds)
+{
+    if (!enabled)
+        return 1;
+    struct Cue { int time; float fov; };
+    // Peaks align with measured transients in the 2:06 soundtrack excerpt.
+    constexpr Cue cues[] = {{3460, 53}, {12680, 38}};
+    for (const auto& cue : cues) {
+        const float distance = static_cast<int>(milliseconds) - cue.time;
+        const float phase = 1 - std::abs(distance) / (distance < 0 ? 360.f : 850.f);
+        if (phase > 0) {
+            const float amount = phase * phase * (3 - 2 * phase);
+            const float fov = 45 + (cue.fov - 45) * amount;
+            return std::tan(pi / 8) / std::tan(fov * pi / 360);
+        }
+    }
+    return 1;
 }

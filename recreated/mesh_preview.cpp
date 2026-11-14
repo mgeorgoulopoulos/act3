@@ -56,6 +56,7 @@ void preview::draw(int width, int height)
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - playbackStart).count();
     scene.m_dwTime = static_cast<DWORD>(elapsed % scene.m_dwDuration);
+    device.SetProjectionFovScale(extra::eggplantFovScale(scene.m_dwTime));
     scene.Render();
 }
 

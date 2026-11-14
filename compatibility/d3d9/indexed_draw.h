@@ -114,6 +114,7 @@ public:
     HRESULT SetFVF(unsigned format) { fvf = format; return D3D_OK; }
     HRESULT SetTransform(TransformState state, const Matrix* matrix);
     void SetProjectionAspectScale(float scale) { projectionAspectScale = scale; }
+    void SetProjectionFovScale(float scale) { projectionFovScale = scale; }
     HRESULT GetTransform(TransformState state, Matrix* matrix) const;
     HRESULT SetLight(unsigned index, const Light* light);
     HRESULT LightEnable(unsigned index, int enable);
@@ -151,6 +152,7 @@ private:
     unsigned fvf = 0;
     Matrix world, view, projection;
     float projectionAspectScale = 1;
+    float projectionFovScale = 1;
     Light light0{};
     bool light0Enabled = false;
     bool inScene = false;
