@@ -22,6 +22,7 @@ extern TextureManager TexMan;
 #include <cstdlib>
 
 namespace {
+using namespace d3d9;
 using Vertex = std::array<float, 3>;
 using d3d9::D3DFVF_XYZ;
 using d3d9::D3DFVF_NORMAL;
@@ -32,7 +33,7 @@ static_assert(sizeof(MODEL_VERTEX) == 8 * sizeof(float) &&
 Scene3DS scene{};
 Scene3DS room{};
 Mesh3DS* meshes[2]{};
-Material* materials[2]{};
+::Material* materials[2]{};
 const auto placements = preview::eggplantPlacements();
 CameraSequence camera;
 static_assert(sizeof(CameraShot) == 28, "Unexpected camera record layout");
@@ -53,12 +54,11 @@ void drawRoom(d3d9::Device& device)
     d3d9::Matrix transform;
     transform._11 = transform._22 = transform._33 = 400;
     transform._42 = 50;
-    glDisable(GL_LIGHTING);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
-    glFrontFace(GL_CCW);
-    glCullFace(GL_BACK);
-    glEnable(GL_CULL_FACE);
+    device.SetRenderState(D3DRS_LIGHTING, 0);
+    device.SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
+    device.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+    device.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+    device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
     glColor3f(1, 1, 1);
     for (unsigned i = 0; i < room.NumObjects; ++i) {
         auto& mesh = room.ObjectList[i];
@@ -69,8 +69,8 @@ void drawRoom(d3d9::Device& device)
             assert(rendered);
         }
     }
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_BLEND);
+    device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+    device.SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
 }
 
 void drawEggplants(d3d9::Device& device, bool reflected)
@@ -78,9 +78,7 @@ void drawEggplants(d3d9::Device& device, bool reflected)
     constexpr auto coord = d3d9::D3DTSS_TEXCOORDINDEX;
     if (eggplantCube)
         device.SetTextureStageState(0, coord, d3d9::D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
-    glFrontFace(reflected ? GL_CCW : GL_CW);
-    glCullFace(GL_BACK);
-    glEnable(GL_CULL_FACE);
+    device.SetRenderState(D3DRS_CULLMODE, reflected ? D3DCULL_CW : D3DCULL_CCW);
     d3d9::Matrix reflection;
     reflection._22 = -1;
     for (unsigned i = 0; i < 2; ++i) {
@@ -91,7 +89,7 @@ void drawEggplants(d3d9::Device& device, bool reflected)
             assert(rendered);
         }
     }
-    glDisable(GL_CULL_FACE);
+    device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
     device.SetTextureStageState(0, coord, d3d9::D3DTSS_TCI_PASSTHRU);
 }
 
@@ -138,6 +136,7 @@ void preview::draw(int width, int height)
 {
     if (width <= 0 || height <= 0)
         return;
+    d3d9::Device device;
     glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     d3d9::Matrix projection;
@@ -149,26 +148,21 @@ void preview::draw(int width, int height)
     projection._34 = 1;
     projection._43 = -nearPlane * projection._33;
     projection._44 = 0;
-    glEnable(GL_DEPTH_TEST);
+    device.SetRenderState(D3DRS_ZENABLE, 1);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     const GLfloat light[] = {-0.4f, 0.7f, 1.0f, 0.0f};
-    const GLfloat ambient[] = {1, 1, 1, 1};
     const GLfloat diffuse[] = {0.9f, 0.9f, 0.9f, 1};
     const GLfloat specular[] = {0.1f, 0.1f, 0.1f, 1};
     glLightfv(GL_LIGHT0, GL_POSITION, light);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
-    // D3D9 adds specular after texture modulation when SPECULARENABLE is set.
-    constexpr GLenum lightModelColorControl = 0x81f8;
-    constexpr GLint separateSpecularColor = 0x81fa;
-    glLightModeli(lightModelColorControl, separateSpecularColor);
+    device.SetRenderState(D3DRS_AMBIENT, 0xffffffff);
+    device.SetRenderState(D3DRS_LOCALVIEWER, 1);
+    device.SetRenderState(D3DRS_SPECULARENABLE, 1);
     glEnable(GL_LIGHT0);
-    glEnable(GL_LIGHTING);
+    device.SetRenderState(D3DRS_LIGHTING, 1);
     glEnable(GL_NORMALIZE);
-    d3d9::Device device;
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - playbackStart).count();
     const auto duration = camera.m_dwTotalTime - camera.m_pKeyframes[0].TimeDelta;
@@ -184,14 +178,14 @@ void preview::draw(int width, int height)
     drawRoom(device);
     drawEggplants(device, false);
     glDisable(GL_NORMALIZE);
-    glDisable(GL_LIGHTING);
+    device.SetRenderState(D3DRS_LIGHTING, 0);
     glDisable(GL_LIGHT0);
 
     char loading[] = "loading.png";
     TexMan.SetTexture(&device, 0, loading);
     if (!glIsEnabled(GL_TEXTURE_2D))
         return;
-    glDisable(GL_DEPTH_TEST);
+    device.SetRenderState(D3DRS_ZENABLE, 0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, width, height, 0, -1, 1);

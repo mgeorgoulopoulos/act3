@@ -136,6 +136,56 @@ HRESULT Device::SetTextureStageState(unsigned stage, TextureStageState state, un
     return D3D_OK;
 }
 
+HRESULT Device::SetRenderState(RenderState state, unsigned value)
+{
+    switch (state) {
+    case D3DRS_ZENABLE:
+    case D3DRS_ALPHABLENDENABLE:
+    case D3DRS_LIGHTING: {
+        const GLenum capability = state == D3DRS_ZENABLE ? GL_DEPTH_TEST :
+            state == D3DRS_LIGHTING ? GL_LIGHTING : GL_BLEND;
+        if (value)
+            glEnable(capability);
+        else
+            glDisable(capability);
+        break;
+    }
+    case D3DRS_ZWRITEENABLE: glDepthMask(value ? GL_TRUE : GL_FALSE); break;
+    case D3DRS_LOCALVIEWER: glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, value != 0); break;
+    case D3DRS_SPECULARENABLE:
+        glLightModeli(0x81f8, value ? 0x81fa : 0x81f9);
+        break;
+    case D3DRS_AMBIENT: {
+        const GLfloat rgba[] = {((value >> 16) & 255) / 255.0f,
+            ((value >> 8) & 255) / 255.0f, (value & 255) / 255.0f,
+            ((value >> 24) & 255) / 255.0f};
+        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, rgba);
+        break;
+    }
+    case D3DRS_CULLMODE:
+        if (value == D3DCULL_NONE) {
+            glDisable(GL_CULL_FACE);
+            break;
+        }
+        if (value != D3DCULL_CW && value != D3DCULL_CCW)
+            return D3DERR_INVALIDCALL;
+        glFrontFace(value == D3DCULL_CW ? GL_CCW : GL_CW);
+        glCullFace(GL_BACK);
+        glEnable(GL_CULL_FACE);
+        break;
+    case D3DRS_SRCBLEND:
+    case D3DRS_DESTBLEND:
+        if (value != 1 && value != D3DBLEND_ONE)
+            return D3DERR_INVALIDCALL;
+        (state == D3DRS_SRCBLEND ? sourceBlend : destinationBlend) = value;
+        glBlendFunc(sourceBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO,
+            destinationBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO);
+        break;
+    default: return D3DERR_INVALIDCALL;
+    }
+    return D3D_OK;
+}
+
 HRESULT Device::SetTransform(TransformState state, const Matrix* matrix)
 {
     if (!matrix)

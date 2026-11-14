@@ -29,6 +29,14 @@ enum Pool { D3DPOOL_DEFAULT = 0, D3DPOOL_SYSTEMMEM = 2 };
 enum Format { D3DFMT_INDEX16 = 101, D3DFMT_DXT1 = 0x31545844 };
 enum TransformState { D3DTS_VIEW = 2, D3DTS_PROJECTION = 3, D3DTS_WORLD = 256 };
 enum TextureStageState { D3DTSS_TEXCOORDINDEX = 11 };
+enum RenderState {
+    D3DRS_ZENABLE = 7, D3DRS_ZWRITEENABLE = 14, D3DRS_SRCBLEND = 19,
+    D3DRS_DESTBLEND = 20, D3DRS_CULLMODE = 22, D3DRS_ALPHABLENDENABLE = 27,
+    D3DRS_SPECULARENABLE = 29, D3DRS_LIGHTING = 137, D3DRS_AMBIENT = 139,
+    D3DRS_LOCALVIEWER = 142
+};
+enum CullMode { D3DCULL_NONE = 1, D3DCULL_CW = 2, D3DCULL_CCW = 3 };
+constexpr unsigned D3DBLEND_ONE = 2;
 constexpr unsigned D3DTSS_TCI_PASSTHRU = 0;
 constexpr unsigned D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR = 0x00030000;
 
@@ -99,6 +107,7 @@ public:
     HRESULT SetMaterial(const Material* material);
     HRESULT SetTexture(unsigned stage, BaseTexture* texture);
     HRESULT SetTextureStageState(unsigned stage, TextureStageState state, unsigned value);
+    HRESULT SetRenderState(RenderState state, unsigned value);
     HRESULT BeginScene()
     {
         if (inScene)
@@ -124,5 +133,7 @@ private:
     unsigned fvf = 0;
     Matrix world, view, projection;
     bool inScene = false;
+    unsigned sourceBlend = D3DBLEND_ONE;
+    unsigned destinationBlend = 1; // D3DBLEND_ZERO
 };
 }
