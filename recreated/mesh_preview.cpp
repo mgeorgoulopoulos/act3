@@ -14,6 +14,7 @@
 #include <cmath>
 #include <cstdint>
 #include <fstream>
+#include <memory>
 #include <vector>
 
 namespace {
@@ -22,21 +23,43 @@ struct Mesh {
     std::vector<Vertex> vertices;
     std::vector<std::uint16_t> indices;
 };
-struct DrawMesh {
-    d3d9::VertexBuffer vertices;
-    d3d9::IndexBuffer indices;
-    unsigned vertexCount;
+struct ReleaseBuffer {
+    template<class Buffer>
+    void operator()(Buffer* buffer) const { buffer->Release(); }
+};
 
-    explicit DrawMesh(const Mesh& mesh)
-        : vertices(mesh.vertices.size() * 3), indices(mesh.indices.size()),
-          vertexCount(static_cast<unsigned>(mesh.vertices.size()))
+struct DrawMesh {
+    std::unique_ptr<d3d9::VertexBuffer, ReleaseBuffer> vertices;
+    std::unique_ptr<d3d9::IndexBuffer, ReleaseBuffer> indices;
+    unsigned vertexCount = 0;
+    unsigned primitiveCount = 0;
+
+    bool upload(d3d9::Device& device, const Mesh& mesh)
     {
-        auto* destination = vertices.Lock();
+        using namespace d3d9;
+        vertexCount = static_cast<unsigned>(mesh.vertices.size());
+        primitiveCount = static_cast<unsigned>(mesh.indices.size() / 3);
+        VertexBuffer* vb = nullptr;
+        if (device.CreateVertexBuffer(vertexCount * 3 * sizeof(float),
+                D3DUSAGE_WRITEONLY, D3DFVF_XYZ, D3DPOOL_SYSTEMMEM, &vb, nullptr) < 0)
+            return false;
+        vertices.reset(vb);
+        IndexBuffer* ib = nullptr;
+        if (device.CreateIndexBuffer(static_cast<unsigned>(mesh.indices.size() * sizeof(std::uint16_t)),
+                D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_SYSTEMMEM, &ib, nullptr) < 0)
+            return false;
+        indices.reset(ib);
+
+        void* data = nullptr;
+        if (vb->Lock(0, 0, &data, 0) < 0)
+            return false;
+        auto* destination = static_cast<float*>(data);
         for (const auto& vertex : mesh.vertices)
             destination = std::copy(vertex.begin(), vertex.end(), destination);
-        vertices.Unlock();
-        std::copy(mesh.indices.begin(), mesh.indices.end(), indices.Lock());
-        indices.Unlock();
+        if (vb->Unlock() < 0 || ib->Lock(0, 0, &data, 0) < 0)
+            return false;
+        std::copy(mesh.indices.begin(), mesh.indices.end(), static_cast<std::uint16_t*>(data));
+        return ib->Unlock() == D3D_OK;
     }
 };
 std::vector<Mesh> meshes;
@@ -93,8 +116,14 @@ bool preview::load()
     radius = std::sqrt(radius);
     if (!(radius > 0 && std::isfinite(radius)))
         return false;
-    for (const auto& mesh : meshes)
-        drawMeshes.emplace_back(mesh);
+    d3d9::Device device;
+    std::vector<DrawMesh> uploaded;
+    for (const auto& mesh : meshes) {
+        uploaded.emplace_back();
+        if (!uploaded.back().upload(device, mesh))
+            return false;
+    }
+    drawMeshes.swap(uploaded);
     meshes.clear();
     return true;
 }
@@ -124,11 +153,11 @@ void preview::draw(int width, int height)
     d3d9::Device device;
     device.SetFVF(d3d9::D3DFVF_XYZ);
     for (const auto& mesh : drawMeshes) {
-        device.SetStreamSource(mesh.vertices, 3 * sizeof(float));
-        device.SetIndices(mesh.indices);
-        const bool drawn = device.DrawIndexedPrimitive(d3d9::D3DPT_TRIANGLELIST,
-            0, 0, mesh.vertexCount, 0, static_cast<unsigned>(mesh.indices.size() / 3));
-        assert(drawn);
+        device.SetStreamSource(0, mesh.vertices.get(), 0, 3 * sizeof(float));
+        device.SetIndices(mesh.indices.get());
+        const auto result = device.DrawIndexedPrimitive(d3d9::D3DPT_TRIANGLELIST,
+            0, 0, mesh.vertexCount, 0, mesh.primitiveCount);
+        assert(result == d3d9::D3D_OK);
     }
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
