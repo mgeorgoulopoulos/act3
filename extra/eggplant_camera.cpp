@@ -7,6 +7,8 @@ using d3d9::Vector3;
 struct Pose { Vector3 eye, target; float roll; };
 struct Shot { float end; Pose from, to; };
 constexpr float pi = 3.14159265358979323846f;
+constexpr unsigned harpStartMs = 29186;
+constexpr unsigned harpEndMs = 35729;
 const Shot shots[] = {
     // Pull back from the light and reveal the still figures below it.
     {8, {{975,298,0}, {1000,300,0}, 0}, {{-430,410,-760}, {390,210,-100}, 0}},
@@ -14,10 +16,8 @@ const Shot shots[] = {
     {16, {{-500,115,-440}, {180,143,-170}, -3}, {{-435,150,475}, {230,145,120}, 3}},
     // Cross the line from the light to the egg at the origin, then uncover it.
     {24, {{-305,113,-140}, {360,205,-3}, -5}, {{-305,113,142}, {360,205,3}, 7}},
-    // A wide, rolling rise into the musical phrase.
-    {30, {{283,105,842}, {275,180,210}, -13}, {{795,390,532}, {185,175,105}, 14}},
-    // A single sweeping arc with a counter-roll, rather than stop/start pans.
-    {36, {{535,205,-550}, {175,145,-160}, 17}, {{-315,290,-455}, {-8,149,-12}, -18}},
+    // A wide, rolling rise into the cut to the recorded harp passage.
+    {harpStartMs / 1000.f, {{283,105,842}, {275,180,210}, -13}, {{795,390,532}, {185,175,105}, 14}},
     // End inside the egg's silhouette for the cut to the rounded blob.
     {40, {{-32,208,-226}, {-10,156,-14}, -8}, {{-12,159,-46}, {-10,156,-14}, 0}},
 };
@@ -42,24 +42,24 @@ bool extra::applyEggplantCamera(d3d9::Device& device, unsigned milliseconds)
 {
     if (!enabled)
         return false;
-    const float seconds = (milliseconds % 40000) / 1000.f;
+    const auto time = milliseconds % 40000;
+    // Keep the original rapid turns and roll at their recorded timestamps.
+    if (time >= harpStartMs && time < harpEndMs)
+        return false;
+    const float seconds = time / 1000.f;
     float start = 0;
     for (const auto& shot : shots) {
         if (seconds >= shot.end) {
             start = shot.end;
             continue;
         }
+        if (time >= harpEndMs)
+            start = harpEndMs / 1000.f;
         const float phase = (seconds-start)/(shot.end-start);
         const float t = phase*phase*(3-2*phase);
         auto eye = mix(shot.from.eye, shot.to.eye, t);
         const auto target = mix(shot.from.target, shot.to.target, t);
         float roll = shot.from.roll+(shot.to.roll-shot.from.roll)*t;
-        if (start == 30) {
-            const float arc = std::sin(pi*t);
-            eye.y += 100*arc;
-            eye.z -= 175*arc;
-            roll += 12*arc;
-        }
         const auto forward = unit({target.x-eye.x,target.y-eye.y,target.z-eye.z});
         const auto right = unit(cross({0,1,0},forward));
         const auto up = cross(forward,right);
