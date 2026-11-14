@@ -111,6 +111,31 @@ HRESULT Device::SetTexture(unsigned stage, BaseTexture* texture)
     return D3D_OK;
 }
 
+HRESULT Device::SetTextureStageState(unsigned stage, TextureStageState state, unsigned value)
+{
+    const auto generation = value & 0xffff0000u;
+    if (stage != 0 || state != D3DTSS_TEXCOORDINDEX ||
+        (value & 0xffffu) > 1 ||
+        (generation != D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR &&
+         value != D3DTSS_TCI_PASSTHRU))
+        return D3DERR_INVALIDCALL;
+
+    constexpr GLint reflectionMap = 0x8512; // GL_REFLECTION_MAP
+    if (generation == D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR) {
+        glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, reflectionMap);
+        glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, reflectionMap);
+        glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, reflectionMap);
+        glEnable(GL_TEXTURE_GEN_S);
+        glEnable(GL_TEXTURE_GEN_T);
+        glEnable(GL_TEXTURE_GEN_R);
+    } else {
+        glDisable(GL_TEXTURE_GEN_S);
+        glDisable(GL_TEXTURE_GEN_T);
+        glDisable(GL_TEXTURE_GEN_R);
+    }
+    return D3D_OK;
+}
+
 HRESULT Device::SetTransform(TransformState state, const Matrix* matrix)
 {
     if (!matrix)

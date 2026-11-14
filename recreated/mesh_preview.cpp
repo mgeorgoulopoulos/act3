@@ -166,24 +166,17 @@ void preview::draw(int width, int height)
             "data\\textures\\chrome.dds", &chrome);
         assert(result == d3d9::D3D_OK);
     }
-    constexpr GLint reflectionMap = 0x8512;
-    if (chrome) {
-        glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, reflectionMap);
-        glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, reflectionMap);
-        glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, reflectionMap);
-        glEnable(GL_TEXTURE_GEN_S);
-        glEnable(GL_TEXTURE_GEN_T);
-        glEnable(GL_TEXTURE_GEN_R);
-    }
+    if (chrome)
+        device.SetTextureStageState(0, d3d9::D3DTSS_TEXCOORDINDEX,
+            d3d9::D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
     for (auto& mesh : meshes) {
         mesh.material.Set(&device, chrome);
         mesh.model.Transform = world;
         const int rendered = mesh.model.Render(&device);
         assert(rendered);
     }
-    glDisable(GL_TEXTURE_GEN_S);
-    glDisable(GL_TEXTURE_GEN_T);
-    glDisable(GL_TEXTURE_GEN_R);
+    device.SetTextureStageState(0, d3d9::D3DTSS_TEXCOORDINDEX,
+        d3d9::D3DTSS_TCI_PASSTHRU);
     glDisable(GL_NORMALIZE);
     glDisable(GL_LIGHTING);
     glDisable(GL_LIGHT0);

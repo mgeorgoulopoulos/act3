@@ -28,6 +28,9 @@ enum PrimitiveType { D3DPT_TRIANGLELIST = 4 };
 enum Pool { D3DPOOL_DEFAULT = 0, D3DPOOL_SYSTEMMEM = 2 };
 enum Format { D3DFMT_INDEX16 = 101, D3DFMT_DXT1 = 0x31545844 };
 enum TransformState { D3DTS_VIEW = 2, D3DTS_PROJECTION = 3, D3DTS_WORLD = 256 };
+enum TextureStageState { D3DTSS_TEXCOORDINDEX = 11 };
+constexpr unsigned D3DTSS_TCI_PASSTHRU = 0;
+constexpr unsigned D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR = 0x00030000;
 
 template<class Element>
 class Buffer {
@@ -95,6 +98,7 @@ public:
     HRESULT SetTransform(TransformState state, const Matrix* matrix);
     HRESULT SetMaterial(const Material* material);
     HRESULT SetTexture(unsigned stage, BaseTexture* texture);
+    HRESULT SetTextureStageState(unsigned stage, TextureStageState state, unsigned value);
     HRESULT BeginScene()
     {
         if (inScene)
