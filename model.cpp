@@ -3660,7 +3660,7 @@ Particle::Particle()
 }
 
 /////////////////////////////////////////////////////////////
-MeshBillboard::MeshBillBoard()
+MeshBillboard::MeshBillboard()
 {
 	ParticleList		=NULL;
 	NumParticles		=0;
