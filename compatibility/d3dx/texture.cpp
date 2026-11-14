@@ -105,6 +105,15 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file
     if (!read)
         return D3DERR_INVALIDCALL;
 
+    // Give the lens ghosts a cooler palette than the amber light source.
+    if (extra::enabled && (name == "lens1.png" || name == "lens2.png" ||
+                           name == "lens3.png" || name == "lens4.png")) {
+        for (std::size_t i = 0; i < pixels.size(); i += 4) {
+            pixels[i] = static_cast<unsigned char>(pixels[i] * 0.66f);
+            pixels[i + 1] = static_cast<unsigned char>(pixels[i + 1] * 0.92f);
+        }
+    }
+
     auto* texture = new (std::nothrow) BaseTexture{};
     if (!texture)
         return E_OUTOFMEMORY_RESULT;
