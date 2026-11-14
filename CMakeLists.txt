@@ -15,3 +15,8 @@ else()
 endif()
 
 target_compile_features(act3 PRIVATE cxx_std_11)
+target_sources(act3 PRIVATE recreated/mesh_preview.cpp)
+set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3/data/geometry"
+    CACHE PATH "Directory containing the original ACT3 geometry")
+configure_file("${ACT3_GEOMETRY_DIR}/eggplant.3ds" assets/eggplant.3ds COPYONLY)
+target_compile_definitions(act3 PRIVATE ACT3_MESH_PATH="${CMAKE_CURRENT_BINARY_DIR}/assets/eggplant.3ds")

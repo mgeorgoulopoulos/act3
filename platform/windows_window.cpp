@@ -1,6 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <GL/gl.h>
+#include "../recreated/mesh_preview.h"
 
 namespace {
 constexpr char windowClass[] = "Act3OpenGLWindow";
@@ -31,6 +32,8 @@ int reportError(const char* message)
 
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
 {
+    if (!preview::load())
+        return reportError("Could not load eggplant.3ds.");
     WNDCLASSA windowType{};
     windowType.style = CS_OWNDC;
     windowType.lpfnWndProc = windowProc;
@@ -68,7 +71,9 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showMode)
         while ((received = GetMessageA(&message, nullptr, 0, 0)) > 0) {
             TranslateMessage(&message);
             DispatchMessageA(&message);
-            glClear(GL_COLOR_BUFFER_BIT);
+            RECT client{};
+            GetClientRect(window, &client);
+            preview::draw(client.right, client.bottom);
             SwapBuffers(dc);
         }
         result = received == -1 ? 1 : static_cast<int>(message.wParam);

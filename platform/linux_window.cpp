@@ -1,6 +1,7 @@
 #include <GL/glx.h>
 #include <X11/keysym.h>
 #include <cstdio>
+#include "../recreated/mesh_preview.h"
 
 namespace {
 int reportError(const char* message)
@@ -39,13 +40,18 @@ int runWindow(Display* display)
         glClearColor(0.05f, 0.09f, 0.18f, 1.0f);
 
         bool running = true;
+        int width = 800;
+        int height = 600;
         while (running) {
             XEvent event{};
             XNextEvent(display, &event);
             switch (event.type) {
-            case Expose:
             case ConfigureNotify:
-                glClear(GL_COLOR_BUFFER_BIT);
+                width = event.xconfigure.width;
+                height = event.xconfigure.height;
+                // Fall through to repaint with the new size.
+            case Expose:
+                preview::draw(width, height);
                 glXSwapBuffers(display, window);
                 break;
             case KeyPress:
@@ -79,6 +85,8 @@ int runWindow(Display* display)
 
 int main()
 {
+    if (!preview::load())
+        return reportError("Could not load eggplant.3ds.");
     Display* display = XOpenDisplay(nullptr);
     if (!display)
         return reportError("Could not connect to the X display.");
