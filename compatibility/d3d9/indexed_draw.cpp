@@ -10,6 +10,10 @@
 #include <new>
 
 namespace d3d9 {
+namespace {
+constexpr unsigned modelFormat = D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1;
+}
+
 Device::~Device()
 {
     SetStreamSource(0, nullptr, 0, 0);
@@ -23,7 +27,7 @@ HRESULT Device::CreateVertexBuffer(unsigned length, unsigned usage, unsigned for
         return D3DERR_INVALIDCALL;
     *buffer = nullptr;
     if (!length || (usage & ~D3DUSAGE_WRITEONLY) || pool != D3DPOOL_SYSTEMMEM ||
-        sharedHandle || format != D3DFVF_XYZ)
+        sharedHandle || (format != D3DFVF_XYZ && format != modelFormat))
         return D3DERR_INVALIDCALL;
     try {
         *buffer = new VertexBuffer(length);
@@ -84,9 +88,11 @@ HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     const auto* vertices = vertexBuffer && !vertexBuffer->locked ? vertexBuffer->storage.data() : nullptr;
     const auto* indices = indexBuffer && !indexBuffer->locked ? indexBuffer->storage.data() : nullptr;
     const auto indexCount = indexBuffer ? indexBuffer->storage.size() : 0;
-    if (type != D3DPT_TRIANGLELIST || fvf != D3DFVF_XYZ ||
+    const bool model = fvf == modelFormat;
+    const auto minimumStride = (model ? 8 : 3) * sizeof(float);
+    if (type != D3DPT_TRIANGLELIST || (!model && fvf != D3DFVF_XYZ) ||
         !vertices || !indices || baseVertex < 0 ||
-        stride < 3 * sizeof(float) || stride % sizeof(float) != 0 ||
+        stride < minimumStride || stride % sizeof(float) != 0 ||
         stride > static_cast<std::size_t>(glLimit) ||
         startIndex > indexCount || primitiveCount > (indexCount - startIndex) / 3 ||
         primitiveCount > static_cast<unsigned>(glLimit / 3))
@@ -109,7 +115,17 @@ HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     const auto* firstVertex = vertices + (streamOffset + base * stride) / sizeof(float);
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(3, GL_FLOAT, static_cast<GLsizei>(stride), firstVertex);
+    if (model) {
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glNormalPointer(GL_FLOAT, static_cast<GLsizei>(stride), firstVertex + 3);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glTexCoordPointer(2, GL_FLOAT, static_cast<GLsizei>(stride), firstVertex + 6);
+    }
     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, firstIndex);
+    if (model) {
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+    }
     glDisableClientState(GL_VERTEX_ARRAY);
     return D3D_OK;
 }

@@ -13,12 +13,19 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <memory>
 #include <vector>
 
 namespace {
 using Vertex = std::array<float, 3>;
+using d3d9::D3DFVF_XYZ;
+using d3d9::D3DFVF_NORMAL;
+using d3d9::D3DFVF_TEX1;
+static_assert(sizeof(MODEL_VERTEX) == 8 * sizeof(float) &&
+    offsetof(MODEL_VERTEX, nx) == 3 * sizeof(float) &&
+    offsetof(MODEL_VERTEX, tu) == 6 * sizeof(float), "Unexpected MODEL_VERTEX layout");
 struct Mesh {
     std::vector<Vertex> vertices;
     std::vector<std::uint16_t> indices;
@@ -40,8 +47,8 @@ struct DrawMesh {
         vertexCount = static_cast<unsigned>(mesh.vertices.size());
         primitiveCount = static_cast<unsigned>(mesh.indices.size() / 3);
         VertexBuffer* vb = nullptr;
-        if (device.CreateVertexBuffer(vertexCount * 3 * sizeof(float),
-                D3DUSAGE_WRITEONLY, D3DFVF_XYZ, D3DPOOL_SYSTEMMEM, &vb, nullptr) < 0)
+        if (device.CreateVertexBuffer(static_cast<unsigned>(vertexCount * sizeof(MODEL_VERTEX)),
+                D3DUSAGE_WRITEONLY, FVF_MODEL, D3DPOOL_SYSTEMMEM, &vb, nullptr) < 0)
             return false;
         vertices.reset(vb);
         IndexBuffer* ib = nullptr;
@@ -53,9 +60,12 @@ struct DrawMesh {
         void* data = nullptr;
         if (vb->Lock(0, 0, &data, 0) < 0)
             return false;
-        auto* destination = static_cast<float*>(data);
-        for (const auto& vertex : mesh.vertices)
-            destination = std::copy(vertex.begin(), vertex.end(), destination);
+        auto* destination = static_cast<unsigned char*>(data);
+        for (const auto& vertex : mesh.vertices) {
+            const MODEL_VERTEX model{vertex[0], vertex[1], vertex[2], 0, 0, 1, 0, 0};
+            std::memcpy(destination, &model, sizeof(model));
+            destination += sizeof(model);
+        }
         if (vb->Unlock() < 0 || ib->Lock(0, 0, &data, 0) < 0)
             return false;
         std::copy(mesh.indices.begin(), mesh.indices.end(), static_cast<std::uint16_t*>(data));
@@ -151,9 +161,9 @@ void preview::draw(int width, int height)
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glColor3f(0.79f, 0.57f, 1.0f);
     d3d9::Device device;
-    device.SetFVF(d3d9::D3DFVF_XYZ);
+    device.SetFVF(FVF_MODEL);
     for (const auto& mesh : drawMeshes) {
-        device.SetStreamSource(0, mesh.vertices.get(), 0, 3 * sizeof(float));
+        device.SetStreamSource(0, mesh.vertices.get(), 0, sizeof(MODEL_VERTEX));
         device.SetIndices(mesh.indices.get());
         const auto result = device.DrawIndexedPrimitive(d3d9::D3DPT_TRIANGLELIST,
             0, 0, mesh.vertexCount, 0, mesh.primitiveCount);
