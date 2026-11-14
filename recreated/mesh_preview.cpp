@@ -22,7 +22,25 @@ struct Mesh {
     std::vector<Vertex> vertices;
     std::vector<std::uint16_t> indices;
 };
+struct DrawMesh {
+    d3d9::VertexBuffer vertices;
+    d3d9::IndexBuffer indices;
+    unsigned vertexCount;
+
+    explicit DrawMesh(const Mesh& mesh)
+        : vertices(mesh.vertices.size() * 3), indices(mesh.indices.size()),
+          vertexCount(static_cast<unsigned>(mesh.vertices.size()))
+    {
+        auto* destination = vertices.Lock();
+        for (const auto& vertex : mesh.vertices)
+            destination = std::copy(vertex.begin(), vertex.end(), destination);
+        vertices.Unlock();
+        std::copy(mesh.indices.begin(), mesh.indices.end(), indices.Lock());
+        indices.Unlock();
+    }
+};
 std::vector<Mesh> meshes;
+std::vector<DrawMesh> drawMeshes;
 Vertex center{};
 float radius = 0;
 
@@ -55,6 +73,7 @@ bool readMesh(const char* path)
 bool preview::load()
 {
     meshes.clear();
+    drawMeshes.clear();
     if (!readMesh(ACT3_STEM_PATH) || !readMesh(ACT3_EGG_PATH))
         return false;
     Vertex low = meshes.front().vertices.front();
@@ -72,7 +91,12 @@ bool preview::load()
         radius += extent * extent;
     }
     radius = std::sqrt(radius);
-    return radius > 0 && std::isfinite(radius);
+    if (!(radius > 0 && std::isfinite(radius)))
+        return false;
+    for (const auto& mesh : meshes)
+        drawMeshes.emplace_back(mesh);
+    meshes.clear();
+    return true;
 }
 
 void preview::draw(int width, int height)
@@ -99,12 +123,11 @@ void preview::draw(int width, int height)
     glColor3f(0.79f, 0.57f, 1.0f);
     d3d9::Device device;
     device.SetFVF(d3d9::D3DFVF_XYZ);
-    for (const auto& mesh : meshes) {
-        const auto vertexCount = static_cast<unsigned>(mesh.vertices.size());
-        device.SetStreamSource(mesh.vertices.data(), sizeof(Vertex), vertexCount);
-        device.SetIndices(mesh.indices.data(), mesh.indices.size());
+    for (const auto& mesh : drawMeshes) {
+        device.SetStreamSource(mesh.vertices, 3 * sizeof(float));
+        device.SetIndices(mesh.indices);
         const bool drawn = device.DrawIndexedPrimitive(d3d9::D3DPT_TRIANGLELIST,
-            0, 0, vertexCount, 0, static_cast<unsigned>(mesh.indices.size() / 3));
+            0, 0, mesh.vertexCount, 0, static_cast<unsigned>(mesh.indices.size() / 3));
         assert(drawn);
     }
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

@@ -7,18 +7,10 @@
 #include <GL/gl.h>
 #include <limits>
 
-void d3d9::Device::SetStreamSource(const void* data, std::size_t vertexStride,
-    unsigned count)
+void d3d9::Device::SetStreamSource(const VertexBuffer& buffer, std::size_t vertexStride)
 {
-    vertices = data;
+    vertexBuffer = &buffer;
     stride = vertexStride;
-    streamCount = count;
-}
-
-void d3d9::Device::SetIndices(const std::uint16_t* data, std::size_t count)
-{
-    indices = data;
-    indexCount = count;
 }
 
 bool d3d9::Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
@@ -26,14 +18,19 @@ bool d3d9::Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     unsigned primitiveCount) const
 {
     const auto glLimit = (std::numeric_limits<GLsizei>::max)();
+    const auto* vertices = vertexBuffer ? vertexBuffer->data() : nullptr;
+    const auto* indices = indexBuffer ? indexBuffer->data() : nullptr;
+    const auto indexCount = indexBuffer ? indexBuffer->size() : 0;
     if (type != D3DPT_TRIANGLELIST || fvf != D3DFVF_XYZ ||
         !vertices || !indices || baseVertex < 0 ||
-        stride < 3 * sizeof(float) || stride > static_cast<std::size_t>(glLimit) ||
+        stride < 3 * sizeof(float) || stride % sizeof(float) != 0 ||
+        stride > static_cast<std::size_t>(glLimit) ||
         startIndex > indexCount || primitiveCount > (indexCount - startIndex) / 3 ||
         primitiveCount > static_cast<unsigned>(glLimit / 3))
         return false;
 
-    const auto base = static_cast<unsigned>(baseVertex);
+    const auto streamCount = vertexBuffer->size() / (stride / sizeof(float));
+    const auto base = static_cast<std::size_t>(baseVertex);
     if (base > streamCount || minVertex > streamCount - base ||
         vertexCount > streamCount - base - minVertex)
         return false;
@@ -46,7 +43,7 @@ bool d3d9::Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
             return false;
     }
 
-    const auto* firstVertex = static_cast<const unsigned char*>(vertices) + base * stride;
+    const auto* firstVertex = vertices + base * (stride / sizeof(float));
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(3, GL_FLOAT, static_cast<GLsizei>(stride), firstVertex);
     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, firstIndex);
