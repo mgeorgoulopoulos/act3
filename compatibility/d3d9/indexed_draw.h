@@ -13,6 +13,7 @@ struct Material {
 };
 struct BaseTexture {
     unsigned name;
+    unsigned target;
     void Release();
 };
 using HRESULT = std::int32_t;

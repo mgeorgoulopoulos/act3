@@ -101,11 +101,13 @@ HRESULT Device::SetTexture(unsigned stage, BaseTexture* texture)
 {
     if (stage != 0)
         return D3DERR_INVALIDCALL;
-    glBindTexture(GL_TEXTURE_2D, texture ? texture->name : 0);
-    if (texture)
-        glEnable(GL_TEXTURE_2D);
-    else
-        glDisable(GL_TEXTURE_2D);
+    constexpr GLenum cubeMap = 0x8513;
+    glDisable(GL_TEXTURE_2D);
+    glDisable(cubeMap);
+    if (texture) {
+        glBindTexture(texture->target, texture->name);
+        glEnable(texture->target);
+    }
     return D3D_OK;
 }
 

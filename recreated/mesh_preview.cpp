@@ -43,6 +43,7 @@ struct PreviewMesh {
 PreviewMesh meshes[2];
 Vertex center{};
 float radius = 0;
+LPDIRECT3DCUBETEXTURE9 chrome = nullptr;
 
 bool buildNormals(Mesh3DS& mesh)
 {
@@ -160,12 +161,29 @@ void preview::draw(int width, int height)
     d3d9::Device device;
     device.SetTransform(d3d9::D3DTS_VIEW, &view);
     device.SetTransform(d3d9::D3DTS_PROJECTION, &projection);
+    if (!chrome) {
+        const auto result = D3DXCreateCubeTextureFromFile(&device,
+            "data\\textures\\chrome.dds", &chrome);
+        assert(result == d3d9::D3D_OK);
+    }
+    constexpr GLint reflectionMap = 0x8512;
+    if (chrome) {
+        glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, reflectionMap);
+        glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, reflectionMap);
+        glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, reflectionMap);
+        glEnable(GL_TEXTURE_GEN_S);
+        glEnable(GL_TEXTURE_GEN_T);
+        glEnable(GL_TEXTURE_GEN_R);
+    }
     for (auto& mesh : meshes) {
-        mesh.material.Set(&device, nullptr);
+        mesh.material.Set(&device, chrome);
         mesh.model.Transform = world;
         const int rendered = mesh.model.Render(&device);
         assert(rendered);
     }
+    glDisable(GL_TEXTURE_GEN_S);
+    glDisable(GL_TEXTURE_GEN_T);
+    glDisable(GL_TEXTURE_GEN_R);
     glDisable(GL_NORMALIZE);
     glDisable(GL_LIGHTING);
     glDisable(GL_LIGHT0);
@@ -192,6 +210,10 @@ void preview::draw(int width, int height)
 
 void preview::releaseTextures()
 {
+    if (chrome) {
+        chrome->Release();
+        chrome = nullptr;
+    }
     TexMan.Release();
     TexMan.pFirstEntry = nullptr;
 }

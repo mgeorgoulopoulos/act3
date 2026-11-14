@@ -17,6 +17,9 @@ struct D3DXPLANE { float a, b, c, d; };
 using D3DMATERIAL9 = d3d9::Material;
 using IDirect3DBaseTexture9 = d3d9::BaseTexture;
 using LPDIRECT3DTEXTURE9 = d3d9::BaseTexture*;
+using LPDIRECT3DCUBETEXTURE9 = d3d9::BaseTexture*;
+d3d9::HRESULT D3DXCreateCubeTextureFromFile(d3d9::Device*, const char*,
+    LPDIRECT3DCUBETEXTURE9*);
 using d3d9::D3DFMT_DXT1;
 using d3d9::D3DPOOL_DEFAULT;
 constexpr unsigned D3DX_DEFAULT = ~0u;
