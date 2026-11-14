@@ -17,7 +17,7 @@ endif()
 
 target_compile_features(act3 PRIVATE cxx_std_17)
 target_sources(act3 PRIVATE recreated/mesh_preview.cpp compatibility/d3d9/indexed_draw.cpp
-    extra/eggplant_camera.cpp)
+    extra/eggplant_camera.cpp extra/eggplant_grade.cpp)
 target_compile_definitions(act3 PRIVATE ACT3_OPENGL)
 target_sources(act3 PRIVATE EggplantScene.cpp recreated/scene_host.cpp Frustum.cpp compatibility/d3dx/geometry.cpp)
 # Build the original entry points until the remaining model.cpp methods can
@@ -84,3 +84,4 @@ endforeach()
 target_compile_definitions(act3 PRIVATE ACT3_ASSET_ROOT="${CMAKE_CURRENT_BINARY_DIR}/assets"
     ACT3_TEXTURE_DIR="${CMAKE_CURRENT_BINARY_DIR}/assets/textures")
 configure_file(extra/textures/circuit.png assets/extra/textures/circuit.png COPYONLY)
+configure_file(extra/luts/eggplants.png assets/textures/eggplants-grade.png COPYONLY)

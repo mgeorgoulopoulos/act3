@@ -1,5 +1,6 @@
 #include "mesh_preview.h"
 #include "../extra/mode.h"
+#include "../extra/eggplant_grade.h"
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -58,10 +59,12 @@ void preview::draw(int width, int height)
     scene.m_dwTime = static_cast<DWORD>(elapsed % scene.m_dwDuration);
     device.SetProjectionFovScale(extra::eggplantFovScale(scene.m_dwTime));
     scene.Render();
+    extra::postProcessEggplants(width, height);
 }
 
 void preview::releaseTextures()
 {
+    extra::releaseEggplantGrade();
     if (scene.m_pd3dDevice)
         scene.Release();
     if (scene.CubeMap)
