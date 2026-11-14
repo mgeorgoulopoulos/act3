@@ -39,3 +39,9 @@ using d3d9::D3DFVF_XYZ;
 using d3d9::D3DFVF_NORMAL;
 using d3d9::D3DFVF_TEX1;
 inline void D3DXMatrixIdentity(D3DXMATRIXA16* matrix) { *matrix = D3DXMATRIXA16{}; }
+inline D3DXMATRIXA16* D3DXMatrixMultiply(D3DXMATRIXA16* out,
+    const D3DXMATRIXA16* left, const D3DXMATRIXA16* right)
+{
+    *out = *left * *right;
+    return out;
+}

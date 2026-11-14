@@ -8,7 +8,6 @@ using d3d9::D3DUSAGE_WRITEONLY;
 using d3d9::D3DPOOL_SYSTEMMEM;
 using d3d9::D3DFMT_INDEX16;
 
-// Texture loading is outside the scope of the current preview.
 TextureManager TexMan;
 
 @act3_mesh_constructor@
@@ -21,6 +20,7 @@ TextureManager TexMan;
 @act3_get_material@
 @act3_scene_constructor@
 @act3_get_object@
+@act3_scene_batch@
 @act3_scene_load@
 
 void WriteToLog(const char* message)

@@ -60,15 +60,14 @@ void drawRoom(d3d9::Device& device)
     device.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
     device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
     glColor3f(1, 1, 1);
-    for (unsigned i = 0; i < room.NumObjects; ++i) {
-        auto& mesh = room.ObjectList[i];
-        if (auto* material = room.MaMa.GetMaterial(mesh.MaterialName)) {
-            material->Set(&device, nullptr);
-            mesh.Transform = transform;
-            const auto rendered = mesh.Render(&device);
-            assert(rendered);
-        }
-    }
+    // BatchRender composes the scene transform into each object in place.
+    room.ClearTransform();
+    room.Transform = transform;
+    const auto began = device.BeginScene();
+    assert(began == D3D_OK);
+    room.BatchRender(&device);
+    const auto ended = device.EndScene();
+    assert(ended == D3D_OK);
     device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
     device.SetRenderState(D3DRS_ALPHABLENDENABLE, 0);
 }
