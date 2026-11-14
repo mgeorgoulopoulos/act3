@@ -101,6 +101,11 @@ void preview::draw(int width, int height)
         world.m[axis][axis] = scale;
         world.m[3][axis] = -center[axis] * scale;
     }
+    // The historical loader swaps Y and Z. Keep the preview's original view.
+    d3d9::Matrix previewAxes;
+    previewAxes.m[1][1] = previewAxes.m[2][2] = 0;
+    previewAxes.m[1][2] = previewAxes.m[2][1] = 1;
+    world = world * previewAxes;
     constexpr float radians = 3.14159265358979323846f / 180;
     const float pitch = -65 * radians;
     const float yaw = 25 * radians;
