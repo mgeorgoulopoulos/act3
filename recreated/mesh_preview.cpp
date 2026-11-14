@@ -24,6 +24,7 @@ static_assert(sizeof(MODEL_VERTEX) == 8 * sizeof(float) &&
     offsetof(MODEL_VERTEX, tu) == 6 * sizeof(float), "Unexpected MODEL_VERTEX layout");
 struct PreviewMesh {
     Mesh3DS model;
+    Material material{};
 
     ~PreviewMesh()
     {
@@ -39,6 +40,41 @@ struct PreviewMesh {
 PreviewMesh meshes[2];
 Vertex center{};
 float radius = 0;
+
+bool buildNormals(Mesh3DS& mesh)
+{
+    for (unsigned i = 0; i < mesh.NumIndices; i += 3) {
+        const auto* face = mesh.IndexList + i;
+        if (face[0] >= mesh.NumVertices || face[1] >= mesh.NumVertices ||
+            face[2] >= mesh.NumVertices)
+            return false;
+        auto& a = mesh.VertexList[face[0]];
+        auto& b = mesh.VertexList[face[1]];
+        auto& c = mesh.VertexList[face[2]];
+        const Vertex u{{b.x-a.x, b.y-a.y, b.z-a.z}};
+        const Vertex v{{c.x-a.x, c.y-a.y, c.z-a.z}};
+        for (auto* vertex : {&a, &b, &c}) {
+            vertex->nx += u[1]*v[2] - u[2]*v[1];
+            vertex->ny += u[2]*v[0] - u[0]*v[2];
+            vertex->nz += u[0]*v[1] - u[1]*v[0];
+        }
+    }
+    return true;
+}
+
+void applyMaterial(const D3DMATERIAL9& material)
+{
+    const auto apply = [](GLenum property, const D3DCOLORVALUE& color) {
+        const GLfloat rgba[] = {color.r, color.g, color.b, color.a};
+        glMaterialfv(GL_FRONT_AND_BACK, property, rgba);
+    };
+    apply(GL_AMBIENT, material.Ambient);
+    apply(GL_DIFFUSE, material.Diffuse);
+    apply(GL_SPECULAR, material.Specular);
+    apply(GL_EMISSION, material.Emissive);
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS,
+        (std::max)(0.0f, (std::min)(128.0f, material.Power)));
+}
 }
 
 bool preview::load()
@@ -51,15 +87,13 @@ bool preview::load()
     for (unsigned i = 0; i < 2; ++i) {
         auto& mesh = meshes[i].model;
         if (!mesh.LoadFrom3DS(path, names[i]) || !mesh.NumVertices ||
-            !mesh.NumIndices || mesh.NumIndices % 3)
+            !mesh.NumIndices || mesh.NumIndices % 3 ||
+            !meshes[i].material.LoadFrom3DS(path, mesh.MaterialName))
             return false;
 
         for (unsigned j = 0; j < mesh.NumVertices; ++j) {
             auto& v = mesh.VertexList[j];
-            // The preview uses wireframe without lighting.
-            v.nx = 0;
-            v.ny = 1;
-            v.nz = 0;
+            v.nx = v.ny = v.nz = 0;
             const Vertex point{{v.x, v.y, v.z}};
             if (first) {
                 low = high = point;
@@ -71,6 +105,8 @@ bool preview::load()
             }
         }
 
+        if (!buildNormals(mesh))
+            return false;
         mesh.CreateBuffers(&device);
         if (!mesh.pVB || !mesh.pIB || !mesh.RefreshBuffers())
             return false;
@@ -123,15 +159,23 @@ void preview::draw(int width, int height)
     projection.m[2][2] = -0.25f;
     projection.m[3][2] = 0.5f;
     glEnable(GL_DEPTH_TEST);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glColor3f(0.79f, 0.57f, 1.0f);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    const GLfloat light[] = {-0.4f, 0.7f, 1.0f, 0.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION, light);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_NORMALIZE);
     d3d9::Device device;
     device.SetTransform(d3d9::D3DTS_VIEW, &view);
     device.SetTransform(d3d9::D3DTS_PROJECTION, &projection);
     for (auto& mesh : meshes) {
+        applyMaterial(mesh.material.Data);
         mesh.model.Transform = world;
         const int rendered = mesh.model.Render(&device);
         assert(rendered);
     }
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glDisable(GL_NORMALIZE);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_LIGHT0);
 }

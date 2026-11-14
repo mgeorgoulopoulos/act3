@@ -13,6 +13,7 @@ static char text_buffer1[1000];
 @act3_mesh_load@
 @act3_mesh_buffers@
 @act3_mesh_render@
+@act3_material_load@
 
 void WriteToLog(const char* message)
 {
