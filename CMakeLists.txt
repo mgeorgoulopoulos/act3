@@ -32,25 +32,17 @@ function(extract_model_method output start_marker end_marker)
     set(${output} "${method}" PARENT_SCOPE)
 endfunction()
 extract_model_method(act3_mesh_constructor "Mesh3DS::Mesh3DS()" "void Mesh3DS::Twist(")
+extract_model_method(act3_mesh_load "int Mesh3DS::LoadFrom3DS(" "void Mesh3DS::InvertNormals(")
+extract_model_method(act3_mesh_buffers "int Mesh3DS::CreateBuffers(" "int Mesh3DS::RefreshVertexBuffer(")
 extract_model_method(act3_mesh_render "int Mesh3DS::Render(" "int Mesh3DS::BatchRender(")
 configure_file(recreated/model_renderer.cpp.in generated/model_renderer.cpp @ONLY)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")
-target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/model_renderer.cpp")
+target_sources(act3 PRIVATE 3ds.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/model_renderer.cpp")
 target_include_directories(act3 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3/data/geometry"
     CACHE PATH "Directory containing the original ACT3 geometry")
-add_executable(act3_export_eggplant recreated/export_eggplant.cpp 3ds.cpp)
-target_include_directories(act3_export_eggplant PRIVATE compatibility/d3dx)
 target_include_directories(act3 PRIVATE compatibility/d3dx)
-set(stem "${CMAKE_CURRENT_BINARY_DIR}/assets/stem.mesh")
-set(egg "${CMAKE_CURRENT_BINARY_DIR}/assets/egg.mesh")
-file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/assets")
-add_custom_command(OUTPUT "${stem}" "${egg}"
-    COMMAND act3_export_eggplant "${ACT3_GEOMETRY_DIR}/eggplant.3ds" "${stem}" "${egg}"
-    DEPENDS act3_export_eggplant "${ACT3_GEOMETRY_DIR}/eggplant.3ds"
-    VERBATIM)
-add_custom_target(act3_geometry DEPENDS "${stem}" "${egg}")
-add_dependencies(act3 act3_geometry)
-target_compile_definitions(act3 PRIVATE ACT3_STEM_PATH="${stem}" ACT3_EGG_PATH="${egg}")
+configure_file("${ACT3_GEOMETRY_DIR}/eggplant.3ds" assets/eggplant.3ds COPYONLY)
+target_compile_definitions(act3 PRIVATE ACT3_MESH_PATH="${CMAKE_CURRENT_BINARY_DIR}/assets/eggplant.3ds")

@@ -1,10 +1,17 @@
 #include "model.h"
+#include <cstring>
 
 using d3d9::D3DTS_WORLD;
 using d3d9::D3DPT_TRIANGLELIST;
+using d3d9::D3DUSAGE_WRITEONLY;
+using d3d9::D3DPOOL_SYSTEMMEM;
+using d3d9::D3DFMT_INDEX16;
 constexpr bool FAILED(d3d9::HRESULT result) { return result < 0; }
+static char text_buffer1[1000];
 
 @act3_mesh_constructor@
+@act3_mesh_load@
+@act3_mesh_buffers@
 @act3_mesh_render@
 
 void WriteToLog(const char* message)
