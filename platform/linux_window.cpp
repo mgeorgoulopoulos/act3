@@ -45,7 +45,8 @@ int runWindow(Display* display)
         const Atom protocols = XInternAtom(display, "WM_PROTOCOLS", False);
         Atom close = XInternAtom(display, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(display, window, &close, 1);
-        XStoreName(display, window, preview::shadowSelected ? "ACT3 | Shadow" :
+        XStoreName(display, window, preview::sequenceSelected ? "ACT3 | Shadow to Eggplant" :
+            preview::shadowSelected ? "ACT3 | Shadow" :
             (extra::enabled ? "ACT3 | Extra" : "ACT3 | OpenGL"));
         XMapWindow(display, window);
         glClearColor(0.05f, 0.09f, 0.18f, 1.0f);
@@ -105,6 +106,7 @@ int main(int argc, char** argv)
 {
     extra::enabled = argc == 2 && std::strcmp(argv[1], "--extra") == 0;
     preview::shadowSelected = argc == 2 && std::strcmp(argv[1], "--shadow") == 0;
+    preview::sequenceSelected = argc == 2 && std::strcmp(argv[1], "--sequence") == 0;
     Display* display = XOpenDisplay(nullptr);
     if (!display)
         return reportError("Could not connect to the X display.");

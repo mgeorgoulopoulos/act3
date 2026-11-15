@@ -59,7 +59,7 @@ extract_model_method(act3_get_material "Material* MaterialManager::GetMaterial("
 extract_model_method(act3_scene_batch "void Scene3DS::BatchRender(" "unsigned long Scene3DS::BatchRenderClipped(")
 extract_model_method(shadow_scene_render "void Scene3DS::Render(" "unsigned long Scene3DS::RenderClipped(")
 extract_model_method(shadow_invert_normals "void Mesh3DS::InvertNormals(" "bool Mesh3DS::RenderClipped(")
-target_sources(act3 PRIVATE recreated/shadow_preview.cpp)
+target_sources(act3 PRIVATE recreated/shadow_preview.cpp recreated/shadow_blur.cpp)
 extract_model_method(act3_scene_constructor "Scene3DS::Scene3DS()" "int Scene3DS::LoadFrom3DS(")
 extract_model_method(act3_get_object "Mesh3DS* Scene3DS::GetObject(" "void Scene3DS::RenderObject(")
 extract_model_method(act3_scene_load "int Scene3DS::LoadFromS3D(" "void Scene3DS::SetTransform(")
