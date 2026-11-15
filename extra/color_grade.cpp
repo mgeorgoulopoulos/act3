@@ -56,6 +56,22 @@ uniform sampler2D scene;
 uniform sampler2D grade;
 uniform sampler2D figureColor, figureDepth;
 uniform int figureMode;
+float plasmaSeed(vec2 uv) {
+    vec3 rgb = texture2D(scene, clamp(uv, 0.0, 1.0)).rgb;
+    float bright = max(rgb.r, max(rgb.g, rgb.b));
+    float chroma = bright - min(rgb.r, min(rgb.g, rgb.b));
+    return smoothstep(0.018, 0.11, chroma) * (1.0 - smoothstep(0.16, 0.29, bright));
+}
+vec3 deepenPlasma(vec2 uv, vec3 color) {
+    // Grow and connect the dark particle cores using their existing shapes and motion.
+    vec2 radius = vec2(0.007, 0.012);
+    float nearby = plasmaSeed(uv + vec2(radius.x, 0.0))
+                 + plasmaSeed(uv - vec2(radius.x, 0.0))
+                 + plasmaSeed(uv + vec2(0.0, radius.y))
+                 + plasmaSeed(uv - vec2(0.0, radius.y));
+    float density = smoothstep(0.12, 0.72, 0.48 * plasmaSeed(uv) + 0.17 * nearby);
+    return mix(color, color * vec3(0.18, 0.14, 0.28), density * 0.88);
+}
 vec3 slice(float r, vec2 gb) {
     return texture2D(grade, vec2((gb.y + 0.5) / 16.0,
                                  (r * 16.0 + gb.x + 0.5) / 256.0)).rgb;
@@ -77,6 +93,8 @@ void main() {
             recovery = 0.12 * smoothstep(0.10, 0.45, max(addedLight.r, addedLight.g));
         }
     }
+    if (figureMode == 2 && !onFigure)
+        original = deepenPlasma(uv, original);
     vec3 key = clamp(mix(original, figure, recovery), 0.0, 1.0) * 15.0;
     float r = floor(key.r);
     gl_FragColor = vec4(mix(slice(r, key.gb), slice(min(r + 1.0, 15.0), key.gb),
