@@ -1,5 +1,6 @@
 #include "blob_preview.h"
 #include "model.h"
+#include "TextureManager.h"
 #include "scene_host.h"
 #include <cmath>
 
@@ -11,11 +12,58 @@
 #include <GL/gl.h>
 #include <algorithm>
 
+extern TextureManager TexMan;
+
 namespace {
 MeshIso m1{};
 MeshInCube room{};
+MeshGrid Asd{}, dna{};
 d3d9::BaseTexture feedback{};
 int feedbackSize;
+
+@greetz_sync@
+
+bool createGrid(MeshGrid& grid, d3d9::Device& device, float width, float height)
+{
+    if (!grid.CreateRectangle(2, 2, width, height) || !grid.CreateBuffers(&device) ||
+        !grid.pVB || !grid.pIB)
+        return false;
+    grid.ApplyColor(0xffffffff);
+    return grid.RefreshBuffers() != 0;
+}
+
+void drawGreetings(d3d9::Device* m_pd3dDevice, unsigned m_dwTime)
+{
+    using namespace d3d9;
+    auto& device = *m_pd3dDevice;
+    device.SetRenderState(D3DRS_LIGHTING, FALSE);
+    device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+    device.SetRenderState(D3DRS_ZENABLE, FALSE);
+    device.SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+    device.SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+    device.SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+    device.SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+    TexMan.SetTexture(&device, 0, "dna.png");
+    dna.ClearTransform();
+    dna.Scroll(0, m_dwTime / 1000.f);
+
+    Matrix view;
+    view._43 = 300;
+    view._11 = view._22 = -1;
+    view._41 = 150;
+    device.SetTransform(D3DTS_VIEW, &view);
+    dna.Render(&device);
+    view._11 = view._22 = 1;
+    device.SetTransform(D3DTS_VIEW, &view);
+    dna.Render(&device);
+
+    view._41 = 0;
+    device.SetTransform(D3DTS_VIEW, &view);
+    @greetz_cards@
+
+    device.SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+    device.SetRenderState(D3DRS_ZENABLE, TRUE);
+}
 
 void drawRoom(d3d9::Device& device, bool blend)
 {
@@ -58,6 +106,16 @@ bool preview::loadBlob(d3d9::Device& device)
     if (!room.Create(350.f) || !room.CreateBuffers(&device) ||
         !room.pVB || !room.pIB)
         return false;
+
+    if (!createGrid(Asd, device, 64, 32) || !createGrid(dna, device, 50, 250))
+        return false;
+    for (const char* asset : {"dna.png", "Greetz/Asd.png", "Greetz/TheLab.png",
+             "Greetz/deus.png", "Greetz/Madwizards.png", "Greetz/Conspiracy.png", "Greetz/SenseAmok.png"}) {
+        TexMan.LoadTexture(&device, asset);
+        const auto* entry = TexMan.FindEntry(asset);
+        if (!entry || !entry->Valid)
+            return false;
+    }
 
     room.ApplyColor(0xefefefef);
     room.RefreshBuffers();
@@ -153,10 +211,16 @@ void preview::drawBlob(d3d9::Device& device, int width, int height, unsigned m_d
     device.Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xff100a18, 1, 0);
     drawRoom(device, true);
     drawSurface();
+    drawGreetings(&device, m_dwTime);
 }
 
 void preview::releaseBlob()
 {
+    Asd.Release();
+    Asd = {};
+    dna.Release();
+    dna = {};
+    TexMan.Release();
     room.Release();
     room = {};
     glDeleteTextures(1, &feedback.name);

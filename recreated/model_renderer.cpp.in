@@ -38,6 +38,8 @@ TextureManager TexMan;
 @billboard@
 @blob_mesh@
 @blob_room@
+@greetz_grid@
+@greetz_scroll@
 
 void WriteToLog(const char* message)
 {
