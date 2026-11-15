@@ -1,0 +1,7 @@
+#pragma once
+
+namespace d3d9 { class Device; struct Matrix; }
+
+namespace extra {
+void applyShadowCamera(d3d9::Device&, unsigned milliseconds, d3d9::Matrix& projection);
+}

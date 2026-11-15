@@ -79,8 +79,17 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ParticleScene.cpp" model_code)
 extract_model_method(shadow_helpers "float RandomNumber(" "bool Scene4::Init(")
 extract_model_method(shadow_init "bool Scene4::Init(" "// create a render target for the blurring effect")
 extract_model_method(shadow_render "void Scene4::RenderEverything(" "void Scene4::Release(")
+set(shadow_projection_call "m_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );")
+string(FIND "${shadow_render}" "${shadow_projection_call}" shadow_projection_position)
+if(shadow_projection_position LESS 0)
+    message(FATAL_ERROR "Cannot locate the Shadow camera hook point")
+endif()
+string(REPLACE "${shadow_projection_call}"
+    "extra::applyShadowCamera(*m_pd3dDevice, m_dwTime, matProj);\n\t${shadow_projection_call}"
+    shadow_render "${shadow_render}")
 configure_file(recreated/shadow_scene.cpp.in generated/shadow_scene.cpp @ONLY)
-target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/shadow_scene.cpp")
+target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/shadow_scene.cpp"
+    extra/shadow_camera.cpp)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")
 target_sources(act3 PRIVATE TextureManager.cpp compatibility/d3dx/texture.cpp
