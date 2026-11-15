@@ -74,7 +74,7 @@ void main() {
             recovery = 0.55;
         } else {
             vec3 addedLight = max(original - figure, 0.0);
-            recovery = 0.48 * smoothstep(0.10, 0.45, max(addedLight.r, addedLight.g));
+            recovery = 0.12 * smoothstep(0.10, 0.45, max(addedLight.r, addedLight.g));
         }
     }
     vec3 key = clamp(mix(original, figure, recovery), 0.0, 1.0) * 15.0;
