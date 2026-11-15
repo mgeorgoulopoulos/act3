@@ -13,6 +13,7 @@ using d3d9::D3DFVF_DIFFUSE; using d3d9::D3DTS_VIEW;
 TextureManager TexMan;
 
 @act3_mesh_constructor@
+@shadow_mesh_twist@
 @act3_mesh_clear@
 @act3_transform_bounds@
 @act3_bb_indices@
