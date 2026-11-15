@@ -1,5 +1,6 @@
 #include "mode.h"
 #include "../compatibility/d3d9/indexed_draw.h"
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -51,7 +52,14 @@ bool applyCameraPose(d3d9::Device& device, unsigned milliseconds)
             continue;
         }
         const float phase = (seconds-start)/(shot.end-start);
-        const float t = phase*phase*(3-2*phase);
+        float t = phase*phase*(3-2*phase);
+        if (start == 0) {
+            // Leave two frames of white at 30 fps, then pull back hard into the rows.
+            constexpr float whiteHold = 0.067f;
+            const float remaining = std::max(0.f, seconds - whiteHold);
+            const float opening = remaining / (shot.end - whiteHold);
+            t = 1.f - std::pow(1.f - opening, 9.f);
+        }
         auto eye = mix(shot.from.eye, shot.to.eye, t);
         if (start == 0) {
             // Drop early, then pass alongside the near row at stem height.
