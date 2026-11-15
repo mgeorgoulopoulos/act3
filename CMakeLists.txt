@@ -125,13 +125,8 @@ string(REPLACE [=[if (!ma1.LoadFrom3DS("data\geometry\Eggplant.3ds" , "PlastiKPu
     char materialName[] = "PlastiKPurple01";
     if (!ma1.LoadFrom3DS(materialFile, materialName))]=] greetz_source "${greetz_source}")
 string(REPLACE "Greetz/Deus.png" "Greetz/deus.png" greetz_source "${greetz_source}")
-string(REPLACE "float par ;" "if (!extra::drawGreetz(*m_pd3dDevice, Asd, m_dwTime)) { float par ;"
-    greetz_source "${greetz_source}")
-string(REPLACE "Asd.Render(m_pd3dDevice);\n\n\tsprintf" "Asd.Render(m_pd3dDevice); }\n\n\tsprintf"
-    greetz_source "${greetz_source}")
-string(REPLACE "// Finished rendering to texture"
-    "extra::drawGreetz(*m_pd3dDevice, Asd, m_dwTime, true);\n\t// Finished rendering to texture"
-    greetz_source "${greetz_source}")
+string(REPLACE "Asd.SetTransform(TRANSFORM_TRANSLATE ,"
+    "extra::positionGreet(*m_pd3dDevice, Asd," greetz_source "${greetz_source}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp" "${greetz_source}")
 target_sources(act3 PRIVATE marching.cpp 3ds.cpp recreated/blob_preview.cpp extra/greetz_layout.cpp
     compatibility/d3d9/render_target.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp")
