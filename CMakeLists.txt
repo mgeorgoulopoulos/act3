@@ -70,6 +70,8 @@ extract_model_method(scene_transform "void Scene3DS::SetTransform(" "Particle::P
 extract_model_method(scene_release "void Scene3DS::Release(" "Mesh3DS* Scene3DS::GetObject(")
 extract_model_method(billboard "Particle::Particle()" "void MeshBillboard::CreateFrom(")
 extract_model_method(blob_mesh "int MeshIso::CreateBuffers(" "// *** MeshInCube")
+extract_model_method(blob_room "int	MeshInCube::Create(" "// ***************************
+//	MaterialManager")
 configure_file(recreated/model_renderer.cpp.in generated/model_renderer.cpp @ONLY)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ParticleScene.cpp ParticleScene.h)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ParticleScene.h" shadow_header)

@@ -3,8 +3,44 @@
 #include "scene_host.h"
 #include <cmath>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+#include <GL/gl.h>
+#include <algorithm>
+
 namespace {
 MeshIso m1{};
+MeshInCube room{};
+d3d9::BaseTexture feedback{};
+int feedbackSize;
+
+void drawRoom(d3d9::Device& device, bool blend)
+{
+    using namespace d3d9;
+    Matrix identity;
+    device.SetTransform(D3DTS_WORLD, &identity);
+    device.SetRenderState(D3DRS_LIGHTING, FALSE);
+    device.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+    device.SetTexture(0, &feedback);
+    device.SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+    glPushAttrib(GL_COLOR_BUFFER_BIT | GL_TRANSFORM_BIT);
+    glMatrixMode(GL_TEXTURE);
+    glPushMatrix();
+    glLoadIdentity();
+    glTranslatef(0, 1, 0);
+    glScalef(1, -1, 1);
+    if (blend) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR);
+    }
+    room.Render(&device);
+    glMatrixMode(GL_TEXTURE);
+    glPopMatrix();
+    glPopAttrib();
+}
 LPDIRECT3DCUBETEXTURE9 chrome{};
 
 d3d9::Vector3 cross(d3d9::Vector3 a, d3d9::Vector3 b)
@@ -19,6 +55,14 @@ bool preview::loadBlob(d3d9::Device& device)
         !m1.pBalls || !m1.CreateBuffers(&device))
         return false;
 
+    if (!room.Create(350.f) || !room.CreateBuffers(&device) ||
+        !room.pVB || !room.pIB)
+        return false;
+
+    room.ApplyColor(0xefefefef);
+    room.RefreshBuffers();
+    feedback.target = GL_TEXTURE_2D;
+    glGenTextures(1, &feedback.name);
     @blob_initial_balls@
     return D3DXCreateCubeTextureFromFile(&device, "data/textures/chrome.dds", &chrome) >= 0;
 }
@@ -69,18 +113,55 @@ void preview::drawBlob(d3d9::Device& device, int width, int height, unsigned m_d
     device.SetRenderState(D3DRS_LIGHTING, TRUE);
     device.SetRenderState(D3DRS_SPECULARENABLE, TRUE);
     device.SetRenderState(D3DRS_ZENABLE, TRUE);
-    device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-    device.SetTexture(0, chrome);
-    device.SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
-
     @blob_motion@
     m1.Update();
     m1.RefreshBuffers();
-    m1.Render(&device);
+    Matrix yaw, pitch, rotation;
+    D3DXMatrixRotationYawPitchRoll(&yaw, (1 + std::sin(m_dwTime / 1000.f)) * D3DX_PI, 0, 0);
+    D3DXMatrixRotationYawPitchRoll(&pitch, 0, (1 + std::sin(m_dwTime / 684.f)) * D3DX_PI, 0);
+    D3DXMatrixMultiply(&rotation, &yaw, &pitch);
+
+    const auto drawSurface = [&] {
+        device.SetTransform(D3DTS_WORLD, &rotation);
+        device.SetRenderState(D3DRS_LIGHTING, TRUE);
+        device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+        device.SetTexture(0, chrome);
+        device.SetTextureStageState(0, D3DTSS_TEXCOORDINDEX,
+            D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
+        m1.Render(&device);
+    };
+
+    // Read the previous frame while drawing, then replace it with the new feedback.
+    const int size = std::min({256, width, height});
+    glViewport(0, 0, size, size);
+    device.Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xff000000, 1, 0);
+    drawSurface();
+    if (feedbackSize == size)
+        drawRoom(device, false);
+
+    glBindTexture(GL_TEXTURE_2D, feedback.name);
+    if (feedbackSize != size) {
+        glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 0, 0, size, size, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        feedbackSize = size;
+    } else {
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, size, size);
+    }
+
+    glViewport(0, 0, width, height);
+    device.Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xff100a18, 1, 0);
+    drawRoom(device, true);
+    drawSurface();
 }
 
 void preview::releaseBlob()
 {
+    room.Release();
+    room = {};
+    glDeleteTextures(1, &feedback.name);
+    feedback.name = 0;
+    feedbackSize = 0;
     m1.Release();
     m1 = {};
     if (chrome)

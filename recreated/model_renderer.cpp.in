@@ -37,6 +37,7 @@ TextureManager TexMan;
 @scene_release@
 @billboard@
 @blob_mesh@
+@blob_room@
 
 void WriteToLog(const char* message)
 {

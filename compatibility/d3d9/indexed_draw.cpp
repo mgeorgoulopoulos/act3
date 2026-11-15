@@ -342,8 +342,9 @@ HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
     const auto* indices = indexBuffer && !indexBuffer->locked ? indexBuffer->storage.data() : nullptr;
     const auto indexCount = indexBuffer ? indexBuffer->storage.size() : 0;
     const bool model = fvf == modelFormat;
-    const auto minimumStride = (model ? 8 : 3) * sizeof(float);
-    if (type != D3DPT_TRIANGLELIST || (!model && fvf != D3DFVF_XYZ) ||
+    const bool grid = fvf == (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+    const auto minimumStride = (model ? 8 : grid ? 6 : 3) * sizeof(float);
+    if (type != D3DPT_TRIANGLELIST || (!model && !grid && fvf != D3DFVF_XYZ) ||
         !vertices || !indices || baseVertex < 0 ||
         stride < minimumStride || stride % sizeof(float) != 0 ||
         stride > static_cast<std::size_t>(glLimit) ||
@@ -367,6 +368,23 @@ HRESULT Device::DrawIndexedPrimitive(PrimitiveType type, int baseVertex,
 
     const auto* firstVertex = vertices + (streamOffset + base * stride) / sizeof(float);
     applyTransforms();
+    if (grid) {
+        const auto* bytes = reinterpret_cast<const unsigned char*>(firstVertex);
+        glBegin(GL_TRIANGLES);
+        for (GLsizei i = 0; i < count; ++i) {
+            const auto* vertex = bytes + firstIndex[i] * stride;
+            float xyz[3], uv[2];
+            std::uint32_t color;
+            std::memcpy(xyz, vertex, sizeof(xyz));
+            std::memcpy(&color, vertex + 12, sizeof(color));
+            std::memcpy(uv, vertex + 16, sizeof(uv));
+            glColor4ub((color >> 16) & 255, (color >> 8) & 255, color & 255, color >> 24);
+            glTexCoord2fv(uv);
+            glVertex3fv(xyz);
+        }
+        glEnd();
+        return D3D_OK;
+    }
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(3, GL_FLOAT, static_cast<GLsizei>(stride), firstVertex);
     if (model) {
