@@ -1,7 +1,8 @@
-#include "eggplant_grade.h"
+#include "color_grade.h"
 #include "mode.h"
 #include "../compatibility/d3dx/d3dx9.h"
 #include <cstdio>
+#include <initializer_list>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -28,7 +29,13 @@ T glProc(const char* name)
 }
 
 GLuint program, frame;
-LPDIRECT3DTEXTURE9 lut;
+struct Lookup {
+    const char* path;
+    LPDIRECT3DTEXTURE9 texture{};
+    bool attempted{};
+};
+Lookup eggplants{"data/textures/eggplants-grade.png"};
+Lookup shadow{"data/textures/shadow-grade.png"};
 int frameWidth, frameHeight;
 bool attempted;
 using UseProgram = void (APIENTRY*)(GLuint);
@@ -73,11 +80,6 @@ bool initialize()
         !useProgram || !activeTexture)
         return false;
 
-    d3d9::Device device;
-    if (D3DXCreateTextureFromFileEx(&device, "data/textures/eggplants-grade.png", 0, 0,
-            D3DX_DEFAULT, 0, D3DFMT_DXT1, D3DPOOL_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT,
-            0, nullptr, nullptr, &lut) < 0)
-        return false;
     const auto shader = createShader(0x8b30); // GL_FRAGMENT_SHADER
     source(shader, 1, &fragment, nullptr);
     compile(shader);
@@ -101,19 +103,30 @@ bool initialize()
 }
 }
 
-void extra::postProcessEggplants(int width, int height)
+void extra::applyColorGrade(int width, int height, SceneGrade scene)
 {
     if (!enabled)
         return;
     if (!attempted) {
         attempted = true;
         if (!initialize()) {
-            releaseEggplantGrade();
+            releaseColorGrade();
             attempted = true;
-            std::fputs("ACT3: Eggplant grading unavailable\n", stderr);
+            std::fputs("ACT3: Color grading unavailable\n", stderr);
         }
     }
     if (!frame)
+        return;
+    auto& lut = scene == SceneGrade::Shadow ? shadow : eggplants;
+    if (!lut.attempted) {
+        lut.attempted = true;
+        d3d9::Device device;
+        if (D3DXCreateTextureFromFileEx(&device, lut.path, 0, 0,
+                D3DX_DEFAULT, 0, D3DFMT_DXT1, D3DPOOL_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT,
+                0, nullptr, nullptr, &lut.texture) < 0)
+            std::fprintf(stderr, "ACT3: Could not load LUT %s\n", lut.path);
+    }
+    if (!lut.texture)
         return;
     glPushAttrib(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
     activeTexture(texture0);
@@ -128,7 +141,7 @@ void extra::postProcessEggplants(int width, int height)
         glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
     }
     activeTexture(texture1);
-    glBindTexture(GL_TEXTURE_2D, lut->name);
+    glBindTexture(GL_TEXTURE_2D, lut.texture->name);
     activeTexture(texture0);
     glDisable(GL_BLEND);
     glDisable(GL_CULL_FACE);
@@ -154,17 +167,20 @@ void extra::postProcessEggplants(int width, int height)
     glPopAttrib();
 }
 
-void extra::releaseEggplantGrade()
+void extra::releaseColorGrade()
 {
     if (program)
         if (auto destroy = glProc<UseProgram>("glDeleteProgram"))
             destroy(program);
     if (frame)
         glDeleteTextures(1, &frame);
-    if (lut)
-        lut->Release();
+    for (auto* lut : {&eggplants, &shadow}) {
+        if (lut->texture)
+            lut->texture->Release();
+        lut->texture = nullptr;
+        lut->attempted = false;
+    }
     program = frame = 0;
-    lut = nullptr;
     attempted = false;
     frameWidth = frameHeight = 0;
 }

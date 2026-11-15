@@ -3,7 +3,7 @@
 #include "shadow_blur.h"
 #include "../extra/shadow_focus.h"
 #include "../extra/mode.h"
-#include "../extra/eggplant_grade.h"
+#include "../extra/color_grade.h"
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -104,6 +104,7 @@ void preview::draw(int width, int height)
             device.SetProjectionHorizontalScale((4.f * height) / (3.f * width));
             drawShadow(device, cycle);
             device.SetProjectionHorizontalScale(1.f);
+            extra::applyColorGrade(width, height, extra::SceneGrade::Shadow);
             extra::postProcessShadow(width, height, cycle);
             return;
         }
@@ -116,12 +117,12 @@ void preview::draw(int width, int height)
     }
     scene.m_dwTime = sequenceSelected ? cycle - shadowDuration : cycle;
     scene.Render();
-    extra::postProcessEggplants(width, height);
+    extra::applyColorGrade(width, height, extra::SceneGrade::Eggplants);
 }
 
 void preview::releaseTextures()
 {
-    extra::releaseEggplantGrade();
+    extra::releaseColorGrade();
     recreated::releaseShadowBlur();
     extra::releaseShadowFocus();
     if (shadowSelected || sequenceSelected)
