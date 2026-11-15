@@ -1,6 +1,7 @@
 #include "model.h"
 #include "TextureManager.h"
 #include <cstring>
+#include <string>
 
 using d3d9::D3DTS_WORLD;
 using d3d9::D3DPT_TRIANGLELIST;
