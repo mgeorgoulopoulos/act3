@@ -71,10 +71,10 @@ void main() {
         if (figureMode == 2) {
             float shading = dot(figure, vec3(0.2126, 0.7152, 0.0722));
             figure = mix(vec3(0.26, 0.29, 0.48), vec3(0.76, 0.84, 1.0), shading);
-            recovery = 0.72;
+            recovery = 0.55;
         } else {
             vec3 addedLight = max(original - figure, 0.0);
-            recovery = 0.58 * smoothstep(0.10, 0.45, max(addedLight.r, addedLight.g));
+            recovery = 0.48 * smoothstep(0.10, 0.45, max(addedLight.r, addedLight.g));
         }
     }
     vec3 key = clamp(mix(original, figure, recovery), 0.0, 1.0) * 15.0;
