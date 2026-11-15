@@ -1,6 +1,7 @@
 #include "mesh_preview.h"
 #include "shadow_preview.h"
 #include "shadow_blur.h"
+#include "../extra/shadow_focus.h"
 #include "../extra/mode.h"
 #include "../extra/eggplant_grade.h"
 #ifdef _WIN32
@@ -99,15 +100,18 @@ void preview::draw(int width, int height)
         (sequenceSelected ? shadowDuration + eggplantDuration :
             shadowSelected ? shadowDuration : eggplantDuration));
     if (shadowSelected || (sequenceSelected && cycle < shadowDuration)) {
+        if (extra::enabled) {
+            device.SetProjectionHorizontalScale((4.f * height) / (3.f * width));
+            drawShadow(device, cycle);
+            device.SetProjectionHorizontalScale(1.f);
+            extra::postProcessShadow(width, height, cycle);
+            return;
+        }
         const int source = (std::min)({512, width, height});
         setSceneViewport(source, source);
         glViewport(0, 0, source, source);
-        // Shadow uses a square intermediate image, but projection must match the final viewport.
-        if (extra::enabled)
-            device.SetProjectionHorizontalScale((4.f * height) / (3.f * width));
         drawShadow(device, cycle);
-        device.SetProjectionHorizontalScale(1.f);
-        recreated::presentShadowBlur(source, width, height, shadowBlurOffset, cycle);
+        recreated::presentShadowBlur(source, width, height, shadowBlurOffset);
         return;
     }
     scene.m_dwTime = sequenceSelected ? cycle - shadowDuration : cycle;
@@ -119,6 +123,7 @@ void preview::releaseTextures()
 {
     extra::releaseEggplantGrade();
     recreated::releaseShadowBlur();
+    extra::releaseShadowFocus();
     if (shadowSelected || sequenceSelected)
         releaseShadow();
     if (scene.m_pd3dDevice)
