@@ -32,6 +32,28 @@ constexpr unsigned eggplantDuration = 40000;
 constexpr float shadowBlurOffset = 0;
 }
 
+void preview::selectOption(std::string_view argument)
+{
+    if (argument == "--extra")
+        extra::enabled = true;
+    else if (argument == "--shadow") {
+        shadowSelected = true;
+        sequenceSelected = false;
+    } else if (argument == "--sequence") {
+        sequenceSelected = true;
+        shadowSelected = false;
+    }
+}
+
+const char* preview::windowTitle()
+{
+    if (sequenceSelected)
+        return extra::enabled ? "ACT3 | Shadow to Eggplant Extra" : "ACT3 | Shadow to Eggplant";
+    if (shadowSelected)
+        return extra::enabled ? "ACT3 | Shadow Extra" : "ACT3 | Shadow";
+    return extra::enabled ? "ACT3 | Extra" : "ACT3 | OpenGL";
+}
+
 bool preview::load()
 {
     namespace fs = std::filesystem;

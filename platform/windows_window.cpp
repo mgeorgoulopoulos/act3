@@ -3,7 +3,7 @@
 #include <GL/gl.h>
 #include "../recreated/mesh_preview.h"
 #include "../extra/mode.h"
-#include <cstring>
+#include <sstream>
 
 namespace {
 constexpr char windowClass[] = "Act3OpenGLWindow";
@@ -34,9 +34,9 @@ int reportError(const char* message)
 
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
 {
-    extra::enabled = std::strcmp(args, "--extra") == 0;
-    preview::shadowSelected = std::strcmp(args, "--shadow") == 0;
-    preview::sequenceSelected = std::strcmp(args, "--sequence") == 0;
+    std::istringstream options(args);
+    for (std::string option; options >> option;)
+        preview::selectOption(option);
     SetProcessDPIAware();
     WNDCLASSA windowType{};
     windowType.style = CS_OWNDC;
@@ -63,9 +63,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
         }
     }
     AdjustWindowRect(&area, WS_OVERLAPPEDWINDOW, FALSE);
-    const char* title = preview::sequenceSelected ? "ACT3 | Shadow to Eggplant" :
-        preview::shadowSelected ? "ACT3 | Shadow" :
-        (extra::enabled ? "ACT3 | Extra" : windowTitle);
+    const char* title = preview::windowTitle();
     HWND window = CreateWindowA(windowClass, title,
         WS_OVERLAPPEDWINDOW, x, y, area.right - area.left, area.bottom - area.top,
         nullptr, nullptr, instance, nullptr);
