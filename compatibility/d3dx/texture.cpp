@@ -88,7 +88,7 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file
     if (path.compare(0, 14, "data/textures/") != 0)
         return D3DERR_INVALIDCALL;
     const auto name = path.substr(14);
-    path = extra::enabled && name == "circuit.png"
+    path = extra::enabled && (name == "circuit.png" || name == "room_sna.png")
         ? std::string(ACT3_ASSET_ROOT) + "/extra/textures/" + name
         : std::string(ACT3_TEXTURE_DIR) + '/' + name;
     std::vector<unsigned char> pixels;
