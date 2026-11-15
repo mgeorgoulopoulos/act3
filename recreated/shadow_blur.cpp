@@ -1,4 +1,5 @@
 #include "shadow_blur.h"
+#include "../extra/shadow_focus.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -21,8 +22,9 @@ void drawTap(float u, float v)
 }
 }
 
-void recreated::presentShadowBlur(int size, int width, int height, float offset)
+void recreated::presentShadowBlur(int size, int width, int height, float offset, unsigned time)
 {
+    if (extra::postProcessShadow(size, width, height, time)) return;
     glPushAttrib(GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT |
         GL_TEXTURE_BIT | GL_TRANSFORM_BIT);
     if (!frame)
@@ -73,6 +75,7 @@ void recreated::presentShadowBlur(int size, int width, int height, float offset)
 
 void recreated::releaseShadowBlur()
 {
+    extra::releaseShadowFocus();
     if (frame)
         glDeleteTextures(1, &frame);
     frame = 0;

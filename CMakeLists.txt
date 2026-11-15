@@ -89,7 +89,7 @@ string(REPLACE "${shadow_projection_call}"
     shadow_render "${shadow_render}")
 configure_file(recreated/shadow_scene.cpp.in generated/shadow_scene.cpp @ONLY)
 target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/shadow_scene.cpp"
-    extra/shadow_camera.cpp)
+    extra/shadow_camera.cpp extra/shadow_focus.cpp)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")
 target_sources(act3 PRIVATE TextureManager.cpp compatibility/d3dx/texture.cpp

@@ -107,7 +107,7 @@ void preview::draw(int width, int height)
             device.SetProjectionHorizontalScale((4.f * height) / (3.f * width));
         drawShadow(device, cycle);
         device.SetProjectionHorizontalScale(1.f);
-        recreated::presentShadowBlur(source, width, height, shadowBlurOffset);
+        recreated::presentShadowBlur(source, width, height, shadowBlurOffset, cycle);
         return;
     }
     scene.m_dwTime = sequenceSelected ? cycle - shadowDuration : cycle;

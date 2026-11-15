@@ -2,17 +2,23 @@
 #include "mode.h"
 #include "../compatibility/d3d9/indexed_draw.h"
 
-void extra::applyShadowCamera(d3d9::Device& device, unsigned milliseconds,
-    d3d9::Matrix& projection)
+float extra::shadowDollyDistance(unsigned milliseconds)
 {
     constexpr unsigned start = 20000, end = 27000;
-    if (!enabled || milliseconds < start || milliseconds >= end)
-        return;
-
+    if (milliseconds < start || milliseconds >= end)
+        return 0;
     const float phase = static_cast<float>(milliseconds - start) / (end - start);
     const float eased = phase * phase * (3 - 2 * phase);
     constexpr float farDistance = 650, nearDistance = 290;
-    const float distance = farDistance + (nearDistance - farDistance) * eased;
+    return farDistance + (nearDistance - farDistance) * eased;
+}
+
+void extra::applyShadowCamera(d3d9::Device& device, unsigned milliseconds,
+    d3d9::Matrix& projection)
+{
+    const float distance = shadowDollyDistance(milliseconds);
+    if (!enabled || !distance)
+        return;
 
     // Keep the figure between the camera and the central star.
     d3d9::Matrix view;
@@ -21,7 +27,7 @@ void extra::applyShadowCamera(d3d9::Device& device, unsigned milliseconds,
     device.SetTransform(d3d9::D3DTS_VIEW, &view);
 
     // Projected size at the focal plane is proportional to focal length / distance.
-    const float zoom = distance / farDistance;
+    const float zoom = distance / shadowDollyDistance(20000);
     projection._11 *= zoom;
     projection._22 *= zoom;
 }
