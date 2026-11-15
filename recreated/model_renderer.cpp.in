@@ -1,6 +1,8 @@
 #include "model.h"
 #include "TextureManager.h"
 #include <cstring>
+#include <cmath>
+#include "marching.h"
 #include <string>
 
 using d3d9::D3DTS_WORLD;
@@ -34,6 +36,7 @@ TextureManager TexMan;
 @scene_transform@
 @scene_release@
 @billboard@
+@blob_mesh@
 
 void WriteToLog(const char* message)
 {

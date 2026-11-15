@@ -69,6 +69,7 @@ extract_model_method(neighbor_release "void NeighborSurfaces::Release(" "void Ne
 extract_model_method(scene_transform "void Scene3DS::SetTransform(" "Particle::Particle()")
 extract_model_method(scene_release "void Scene3DS::Release(" "Mesh3DS* Scene3DS::GetObject(")
 extract_model_method(billboard "Particle::Particle()" "void MeshBillboard::CreateFrom(")
+extract_model_method(blob_mesh "int MeshIso::CreateBuffers(" "// *** MeshInCube")
 configure_file(recreated/model_renderer.cpp.in generated/model_renderer.cpp @ONLY)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ParticleScene.cpp ParticleScene.h)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ParticleScene.h" shadow_header)
@@ -101,6 +102,13 @@ string(REPLACE "${shadow_star_texture}"
 configure_file(recreated/shadow_scene.cpp.in generated/shadow_scene.cpp @ONLY)
 target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/shadow_scene.cpp"
     extra/shadow_camera.cpp extra/shadow_focus.cpp)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS GreetzScene.cpp)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/GreetzScene.cpp" model_code)
+extract_model_method(blob_initial_balls "m1.pBalls[0].x = -15;" "m1.Update();")
+extract_model_method(blob_motion "m1.pBalls[0].x = 19 * sin" "bool upd = false;")
+configure_file(recreated/blob_preview.cpp.in generated/blob_preview.cpp @ONLY)
+target_sources(act3 PRIVATE marching.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/blob_preview.cpp")
+target_include_directories(act3 PRIVATE recreated)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")
 target_sources(act3 PRIVATE TextureManager.cpp compatibility/d3dx/texture.cpp
@@ -113,7 +121,7 @@ target_include_directories(act3 PRIVATE compatibility/d3dx)
 foreach(asset test.s3d c_room.s3d plants.cam shadow.s3d room.s3d shadow.cam)
     configure_file("${ACT3_GEOMETRY_DIR}/${asset}" "assets/data/geometry/${asset}" COPYONLY)
 endforeach()
-foreach(asset circuit.png metal.dds star.png lens1.png lens2.png lens3.png lens4.png room_sna.png)
+foreach(asset circuit.png metal.dds chrome.dds star.png lens1.png lens2.png lens3.png lens4.png room_sna.png)
     configure_file("${ACT3_GEOMETRY_DIR}/../textures/${asset}" "assets/textures/${asset}" COPYONLY)
 endforeach()
 target_compile_definitions(act3 PRIVATE ACT3_ASSET_ROOT="${CMAKE_CURRENT_BINARY_DIR}/assets"

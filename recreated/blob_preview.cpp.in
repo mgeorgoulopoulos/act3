@@ -1,0 +1,82 @@
+#include "blob_preview.h"
+#include "model.h"
+#include "scene_host.h"
+#include <cmath>
+
+namespace {
+MeshIso m1{};
+LPDIRECT3DCUBETEXTURE9 chrome{};
+
+d3d9::Vector3 cross(d3d9::Vector3 a, d3d9::Vector3 b)
+{
+    return {a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x};
+}
+}
+
+bool preview::loadBlob(d3d9::Device& device)
+{
+    if (!m1.Create(40, 40, 40, 200, 200, 200, 6) ||
+        !m1.pBalls || !m1.CreateBuffers(&device))
+        return false;
+
+    @blob_initial_balls@
+    return D3DXCreateCubeTextureFromFile(&device, "data/textures/chrome.dds", &chrome) >= 0;
+}
+
+void preview::drawBlob(d3d9::Device& device, int width, int height, unsigned m_dwTime)
+{
+    using namespace d3d9;
+    device.Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xff100a18, 1, 0);
+    Matrix world, view, projection;
+    const Vector3 eye{100 * std::sin(m_dwTime / 1390.f), 0,
+        100 * std::cos(m_dwTime / 1390.f)};
+    const Vector3 forward{-eye.x / 100, 0, -eye.z / 100};
+    const Vector3 up{100 * std::cos(m_dwTime / 3390.f), 1,
+        100 * std::sin(m_dwTime / 3390.f)};
+    auto right = cross(up, forward);
+    D3DXVec3Normalize(&right, &right);
+    const auto vertical = cross(forward, right);
+    view._11 = right.x; view._21 = right.y; view._31 = right.z;
+    view._12 = vertical.x; view._22 = vertical.y; view._32 = vertical.z;
+    view._13 = forward.x; view._23 = forward.y; view._33 = forward.z;
+    view._43 = 100;
+    D3DXMatrixPerspectiveFovLH(&projection, D3DX_PI / 4, float(width) / height, 1, 10000);
+    device.SetTransform(D3DTS_WORLD, &world);
+    device.SetTransform(D3DTS_VIEW, &view);
+    device.SetTransform(D3DTS_PROJECTION, &projection);
+
+    D3DMATERIAL9 material{};
+    material.Diffuse = {0.75f, 0.45f, 0.85f, 1};
+    material.Ambient = material.Diffuse;
+    material.Specular = {0.8f, 0.8f, 0.9f, 1};
+    material.Power = 50;
+    device.SetMaterial(&material);
+    D3DLIGHT9 light{};
+    light.Type = D3DLIGHT_DIRECTIONAL;
+    light.Direction = {0, -0.287f, 0.958f};
+    light.Diffuse = {1.9f, 0.9f, 1.9f, 1};
+    light.Specular = {0.6f, 0.6f, 0.9f, 1};
+    device.SetLight(0, &light);
+    device.LightEnable(0, TRUE);
+    device.SetRenderState(D3DRS_AMBIENT, 0x00202020);
+    device.SetRenderState(D3DRS_LIGHTING, TRUE);
+    device.SetRenderState(D3DRS_SPECULARENABLE, TRUE);
+    device.SetRenderState(D3DRS_ZENABLE, TRUE);
+    device.SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+    device.SetTexture(0, chrome);
+    device.SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR | 1);
+
+    @blob_motion@
+    m1.Update();
+    m1.RefreshBuffers();
+    m1.Render(&device);
+}
+
+void preview::releaseBlob()
+{
+    m1.Release();
+    m1 = {};
+    if (chrome)
+        chrome->Release();
+    chrome = nullptr;
+}

@@ -292,8 +292,10 @@ HRESULT Device::SetSamplerState(unsigned stage, unsigned state, unsigned value)
 
 HRESULT Device::DrawPrimitive(PrimitiveType type, unsigned start, unsigned count) const
 {
-    if (type != D3DPT_TRIANGLELIST || fvf != (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1) ||
-        !vertexBuffer || vertexBuffer->locked || stride != 24)
+    const bool model = fvf == modelFormat;
+    if (type != D3DPT_TRIANGLELIST ||
+        (!model && fvf != (D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1)) ||
+        !vertexBuffer || vertexBuffer->locked || stride != (model ? 32u : 24u))
         return D3DERR_INVALIDCALL;
     const auto available = (vertexBuffer->length - streamOffset) / stride;
     if (start > available || count > (available - start) / 3)
@@ -301,6 +303,20 @@ HRESULT Device::DrawPrimitive(PrimitiveType type, unsigned start, unsigned count
 
     applyTransforms();
     const auto* bytes = reinterpret_cast<const unsigned char*>(vertexBuffer->storage.data());
+    if (model) {
+        const auto* vertex = vertexBuffer->storage.data() + streamOffset / sizeof(float);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glVertexPointer(3, GL_FLOAT, stride, vertex);
+        glNormalPointer(GL_FLOAT, stride, vertex + 3);
+        glTexCoordPointer(2, GL_FLOAT, stride, vertex + 6);
+        glDrawArrays(GL_TRIANGLES, start, count * 3);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
+        return D3D_OK;
+    }
     glBegin(GL_TRIANGLES);
     for (unsigned i = 0; i < count * 3; ++i) {
         const auto* vertex = bytes + streamOffset + (start + i) * stride;
