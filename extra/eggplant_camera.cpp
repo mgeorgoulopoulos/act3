@@ -11,8 +11,8 @@ constexpr float pi = 3.14159265358979323846f;
 constexpr unsigned harpStartMs = 29186;
 float viewportAspect = 4.f / 3.f;
 const Shot shots[] = {
-    // Pull back from the light and reveal the still figures below it.
-    {8, {{975,298,0}, {1000,300,0}, 0}, {{-125,128,-195}, {595,172,-15}, 0}},
+    // Leave the light and fly down the aisle between the staggered rows.
+    {8, {{975,298,0}, {1000,300,0}, 0}, {{-1080,115,155}, {-1480,125,155}, 0}},
     // Cut to a low lateral track, with plants at several depths.
     {16, {{-500,115,-440}, {180,143,-170}, -3}, {{-435,150,475}, {230,145,120}, 3}},
     // Cross the line from the light to the egg at the origin, then uncover it.
@@ -52,23 +52,27 @@ bool applyCameraPose(d3d9::Device& device, unsigned milliseconds)
             continue;
         }
         const float phase = (seconds-start)/(shot.end-start);
-        float t = phase*phase*(3-2*phase);
-        if (start == 0) {
-            // Leave two frames of white at 30 fps, then pull back hard into the rows.
-            constexpr float whiteHold = 0.067f;
-            const float remaining = std::max(0.f, seconds - whiteHold);
-            const float opening = remaining / (shot.end - whiteHold);
-            t = 1.f - std::pow(1.f - opening, 9.f);
-        }
+        const float t = phase*phase*(3-2*phase);
         auto eye = mix(shot.from.eye, shot.to.eye, t);
-        if (start == 0) {
-            // Drop early, then pass alongside the near row at stem height.
-            const float descent = std::sin(pi * t);
-            eye.y -= 100 * descent;
-            eye.z -= 155 * descent;
-        }
-        const auto target = mix(shot.from.target, shot.to.target, t);
+        auto target = mix(shot.from.target, shot.to.target, t);
         float roll = shot.from.roll+(shot.to.roll-shot.from.roll)*t;
+        if (start == 0) {
+            constexpr float whiteHold = 0.067f;
+            const float travel = std::max(0.f, seconds - whiteHold);
+            const float progress = travel / (shot.end - whiteHold);
+            const float settle = 1.f - std::exp(-3.5f * travel);
+            eye = mix(shot.from.eye, shot.to.eye, 0.82f * progress + 0.18f * settle);
+            eye.y = 115 + 183 * (1 - settle) + 18 * std::sin(1.25f * travel) * settle;
+            eye.z = (155 + 48 * std::sin(1.55f * travel)) * settle;
+
+            // Turn away from the core as we descend, then look across alternating rows.
+            const float turn = std::min(1.f, travel / 1.3f);
+            const float heading = pi * turn * turn * (3 - 2 * turn)
+                + 0.36f * std::sin(1.55f * travel) * settle;
+            target = {eye.x + 400 * std::cos(heading), eye.y + 32,
+                eye.z + 400 * std::sin(heading)};
+            roll = 5 * std::sin(1.55f * travel) * settle;
+        }
         const auto forward = unit({target.x-eye.x,target.y-eye.y,target.z-eye.z});
         const auto right = unit(cross({0,1,0},forward));
         const auto up = cross(forward,right);
