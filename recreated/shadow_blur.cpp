@@ -52,14 +52,19 @@ void recreated::presentShadowBlur(int size, int width, int height, float offset)
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
-    glColor4f(0.25f, 0.25f, 0.25f, 1);
     glDisable(GL_BLEND);
-    drawTap(0, offset);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
-    drawTap(0, -offset);
-    drawTap(offset, 0);
-    drawTap(-offset, 0);
+    if (offset == 0) {
+        glColor4f(1, 1, 1, 1);
+        drawTap(0, 0);
+    } else {
+        glColor4f(0.25f, 0.25f, 0.25f, 1);
+        drawTap(0, offset);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        drawTap(0, -offset);
+        drawTap(offset, 0);
+        drawTap(-offset, 0);
+    }
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();

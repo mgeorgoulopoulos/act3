@@ -28,7 +28,8 @@ Scene1 scene{};
 std::chrono::steady_clock::time_point playbackStart;
 constexpr unsigned shadowDuration = 56000;
 constexpr unsigned eggplantDuration = 40000;
-constexpr float shadowBlurOffset = 400.f / 10000.f; // Default m_MouseX in DemoEngine.
+// Reference captures show a sharp silhouette during ordinary playback.
+constexpr float shadowBlurOffset = 0;
 }
 
 bool preview::load()
