@@ -12,7 +12,7 @@ constexpr unsigned harpStartMs = 29186;
 float viewportAspect = 4.f / 3.f;
 const Shot shots[] = {
     // Leave the light and fly down the aisle between the staggered rows.
-    {8, {{975,298,0}, {1000,300,0}, 0}, {{-1080,115,155}, {-1480,125,155}, 0}},
+    {8, {{975,298,0}, {1000,300,0}, 0}, {{-1030,115,155}, {1000,300,0}, 0}},
     // Cut to a low lateral track, with plants at several depths.
     {16, {{-500,115,-440}, {180,143,-170}, -3}, {{-435,150,475}, {230,145,120}, 3}},
     // Cross the line from the light to the egg at the origin, then uncover it.
@@ -65,12 +65,9 @@ bool applyCameraPose(d3d9::Device& device, unsigned milliseconds)
             eye.y = 115 + 183 * (1 - settle) + 18 * std::sin(1.25f * travel) * settle;
             eye.z = (155 + 48 * std::sin(1.55f * travel)) * settle;
 
-            // Turn away from the core as we descend, then look across alternating rows.
-            const float turn = std::min(1.f, travel / 1.3f);
-            const float heading = pi * turn * turn * (3 - 2 * turn)
-                + 0.36f * std::sin(1.55f * travel) * settle;
-            target = {eye.x + 400 * std::cos(heading), eye.y + 32,
-                eye.z + 400 * std::sin(heading)};
+            // Keep the light in frame while the foreground rows sweep past.
+            target.y -= 110 * settle;
+            target.z += 220 * std::sin(1.2f * travel) * settle;
             roll = 5 * std::sin(1.55f * travel) * settle;
         }
         const auto forward = unit({target.x-eye.x,target.y-eye.y,target.z-eye.z});
