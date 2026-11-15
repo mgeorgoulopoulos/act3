@@ -102,7 +102,11 @@ void preview::draw(int width, int height)
         const int source = (std::min)({512, width, height});
         setSceneViewport(source, source);
         glViewport(0, 0, source, source);
+        // Shadow uses a square intermediate image, but projection must match the final viewport.
+        if (extra::enabled)
+            device.SetProjectionHorizontalScale((4.f * height) / (3.f * width));
         drawShadow(device, cycle);
+        device.SetProjectionHorizontalScale(1.f);
         recreated::presentShadowBlur(source, width, height, shadowBlurOffset);
         return;
     }
