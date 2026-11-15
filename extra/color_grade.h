@@ -2,6 +2,7 @@
 
 namespace extra {
 enum class SceneGrade { Eggplants, Shadow };
-void applyColorGrade(int width, int height, SceneGrade scene);
+void captureShadowFigure();
+void applyColorGrade(int width, int height, SceneGrade scene, unsigned time = 0);
 void releaseColorGrade();
 }

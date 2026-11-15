@@ -104,7 +104,7 @@ void preview::draw(int width, int height)
             device.SetProjectionHorizontalScale((4.f * height) / (3.f * width));
             drawShadow(device, cycle);
             device.SetProjectionHorizontalScale(1.f);
-            extra::applyColorGrade(width, height, extra::SceneGrade::Shadow);
+            extra::applyColorGrade(width, height, extra::SceneGrade::Shadow, cycle);
             extra::postProcessShadow(width, height, cycle);
             return;
         }

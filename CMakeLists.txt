@@ -87,6 +87,13 @@ endif()
 string(REPLACE "${shadow_projection_call}"
     "extra::applyShadowCamera(*m_pd3dDevice, m_dwTime, matProj);\n\t${shadow_projection_call}"
     shadow_render "${shadow_render}")
+set(shadow_figure_call "shadow.Render(m_pd3dDevice);")
+string(FIND "${shadow_render}" "${shadow_figure_call}" shadow_figure_position)
+if(shadow_figure_position EQUAL -1)
+    message(FATAL_ERROR "Shadow figure draw call not found")
+endif()
+string(REPLACE "${shadow_figure_call}"
+    "${shadow_figure_call}\n\textra::captureShadowFigure();" shadow_render "${shadow_render}")
 configure_file(recreated/shadow_scene.cpp.in generated/shadow_scene.cpp @ONLY)
 target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/shadow_scene.cpp"
     extra/shadow_camera.cpp extra/shadow_focus.cpp)

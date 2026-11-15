@@ -19,6 +19,11 @@ inline float shadowNegativePulse(unsigned time, float halfWidth)
         shadowPulse(time, 49900, halfWidth)});
 }
 
+inline bool shadowNegativeActive(unsigned time)
+{
+    return (time > 30000 && time < 40000) || (time > 44700 && time < 49900);
+}
+
 inline float shadowCutBlur(unsigned time)
 {
     return std::max(shadowPulse(time, 7700, 1150.f),
