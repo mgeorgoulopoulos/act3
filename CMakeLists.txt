@@ -58,6 +58,7 @@ extract_model_method(act3_material_set "bool Material::IsTheName(" "int MeshIso:
 extract_model_method(act3_get_material "Material* MaterialManager::GetMaterial(" "Scene3DS::Scene3DS()")
 extract_model_method(act3_scene_batch "void Scene3DS::BatchRender(" "unsigned long Scene3DS::BatchRenderClipped(")
 extract_model_method(shadow_scene_render "void Scene3DS::Render(" "unsigned long Scene3DS::RenderClipped(")
+extract_model_method(shadow_invert_normals "void Mesh3DS::InvertNormals(" "bool Mesh3DS::RenderClipped(")
 target_sources(act3 PRIVATE recreated/shadow_preview.cpp)
 extract_model_method(act3_scene_constructor "Scene3DS::Scene3DS()" "int Scene3DS::LoadFrom3DS(")
 extract_model_method(act3_get_object "Mesh3DS* Scene3DS::GetObject(" "void Scene3DS::RenderObject(")
@@ -69,6 +70,17 @@ extract_model_method(scene_transform "void Scene3DS::SetTransform(" "Particle::P
 extract_model_method(scene_release "void Scene3DS::Release(" "Mesh3DS* Scene3DS::GetObject(")
 extract_model_method(billboard "Particle::Particle()" "void MeshBillboard::CreateFrom(")
 configure_file(recreated/model_renderer.cpp.in generated/model_renderer.cpp @ONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ParticleScene.cpp ParticleScene.h)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ParticleScene.h" shadow_header)
+string(REPLACE "#include \"DemoEngine.h\"" "#include \"recreated/scene_host.h\"\n#include \"camera.h\""
+    shadow_header "${shadow_header}")
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/shadow_scene.h" CONTENT "${shadow_header}")
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ParticleScene.cpp" model_code)
+extract_model_method(shadow_helpers "float RandomNumber(" "bool Scene4::Init(")
+extract_model_method(shadow_init "bool Scene4::Init(" "// create a render target for the blurring effect")
+extract_model_method(shadow_render "void Scene4::RenderEverything(" "void Scene4::Release(")
+configure_file(recreated/shadow_scene.cpp.in generated/shadow_scene.cpp @ONLY)
+target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/shadow_scene.cpp")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")
 target_sources(act3 PRIVATE TextureManager.cpp compatibility/d3dx/texture.cpp

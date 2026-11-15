@@ -102,7 +102,7 @@ HRESULT Device::SetMaterial(const Material* material)
 HRESULT Device::SetTexture(unsigned stage, BaseTexture* texture)
 {
     if (stage != 0)
-        return D3DERR_INVALIDCALL;
+        return stage < 4 && !texture ? D3D_OK : D3DERR_INVALIDCALL;
     constexpr GLenum cubeMap = 0x8513;
     glDisable(GL_TEXTURE_2D);
     glDisable(cubeMap);
@@ -141,6 +141,11 @@ HRESULT Device::SetTextureStageState(unsigned stage, TextureStageState state, un
 HRESULT Device::SetRenderState(RenderState state, unsigned value)
 {
     switch (state) {
+    case D3DRS_FILLMODE:
+        if (value != D3DFILL_SOLID)
+            return D3DERR_INVALIDCALL;
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        break;
     case D3DRS_ZENABLE:
     case D3DRS_ALPHABLENDENABLE:
     case D3DRS_LIGHTING: {
@@ -177,11 +182,13 @@ HRESULT Device::SetRenderState(RenderState state, unsigned value)
         break;
     case D3DRS_SRCBLEND:
     case D3DRS_DESTBLEND:
-        if (value != 1 && value != D3DBLEND_ONE)
+        if (value != D3DBLEND_ZERO && value != D3DBLEND_ONE &&
+            !(state == D3DRS_DESTBLEND && value == D3DBLEND_INVDESTCOLOR))
             return D3DERR_INVALIDCALL;
         (state == D3DRS_SRCBLEND ? sourceBlend : destinationBlend) = value;
         glBlendFunc(sourceBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO,
-            destinationBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO);
+            destinationBlend == D3DBLEND_INVDESTCOLOR ? GL_ONE_MINUS_DST_COLOR :
+                destinationBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO);
         break;
     default: return D3DERR_INVALIDCALL;
     }

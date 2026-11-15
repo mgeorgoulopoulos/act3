@@ -91,3 +91,20 @@ void RenderQuadAt(Device*, int x, int y, float size, unsigned long color)
 }
 
 void setSceneViewport(int width, int height) { screenWidth = width; screenHeight = height; }
+
+void RenderSpecificQuad(IDirect3DDevice9*, float x, float y, float width,
+    float height, unsigned long color)
+{
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, 1, 1, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glColor4ub((color >> 16) & 255, (color >> 8) & 255, color & 255, color >> 24);
+    glBegin(GL_QUADS);
+    glTexCoord2f(x, y); glVertex3f(x, y, 1);
+    glTexCoord2f(x + width, y); glVertex3f(x + width, y, 1);
+    glTexCoord2f(x + width, y + height); glVertex3f(x + width, y + height, 1);
+    glTexCoord2f(x, y + height); glVertex3f(x, y + height, 1);
+    glEnd();
+}

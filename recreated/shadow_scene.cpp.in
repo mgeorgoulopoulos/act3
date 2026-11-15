@@ -1,0 +1,19 @@
+#include "shadow_scene.h"
+#include <cstdlib>
+
+using d3d9::D3DRS_FILLMODE;
+using d3d9::D3DFILL_SOLID;
+using d3d9::D3DBLEND_ZERO;
+using d3d9::D3DBLEND_INVDESTCOLOR;
+
+// Standalone playback has no incoming transition or offscreen blur target.
+static bool GetTransition() { return false; }
+
+@shadow_helpers@
+@shadow_init@
+    return Seq1.m_dwNumShots >= 2 &&
+        Seq1.m_dwTotalTime > Seq1.m_pKeyframes[0].TimeDelta &&
+        Billboard.pVB && Star.pVB;
+}
+
+@shadow_render@

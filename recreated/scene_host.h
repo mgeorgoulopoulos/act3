@@ -58,4 +58,5 @@ unsigned long FlareIntensity(IDirect3DDevice9*, float, float, float);
 void GetXY(IDirect3DDevice9*, float, float, float, int*, int*);
 void GetScreenCenter(int*, int*);
 void RenderQuadAt(IDirect3DDevice9*, int, int, float, unsigned long);
+void RenderSpecificQuad(IDirect3DDevice9*, float, float, float, float, unsigned long);
 void setSceneViewport(int, int);

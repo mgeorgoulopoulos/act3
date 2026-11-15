@@ -14,6 +14,7 @@ TextureManager TexMan;
 
 @act3_mesh_constructor@
 @shadow_mesh_twist@
+@shadow_invert_normals@
 @act3_mesh_clear@
 @act3_transform_bounds@
 @act3_bb_indices@
