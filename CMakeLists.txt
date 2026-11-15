@@ -94,6 +94,10 @@ if(shadow_figure_position EQUAL -1)
 endif()
 string(REPLACE "${shadow_figure_call}"
     "${shadow_figure_call}\n\textra::captureShadowFigure();" shadow_render "${shadow_render}")
+set(shadow_star_texture [=[TexMan.SetTexture(m_pd3dDevice , 0 , "star.png");]=])
+string(REPLACE "${shadow_star_texture}"
+    [=[TexMan.SetTexture(m_pd3dDevice, 0, extra::enabled && extra::shadowNegativeActive(m_dwTime) ? "shadow-core.png" : "star.png");]=]
+    shadow_render "${shadow_render}")
 configure_file(recreated/shadow_scene.cpp.in generated/shadow_scene.cpp @ONLY)
 target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/shadow_scene.cpp"
     extra/shadow_camera.cpp extra/shadow_focus.cpp)
@@ -118,4 +122,5 @@ foreach(asset circuit.png room_sna.png)
     configure_file("extra/textures/${asset}" "assets/extra/textures/${asset}" COPYONLY)
 endforeach()
 configure_file(extra/luts/eggplants.png assets/textures/eggplants-grade.png COPYONLY)
+configure_file(extra/textures/shadow-core.png assets/textures/shadow-core.png COPYONLY)
 configure_file(extra/luts/shadow.png assets/textures/shadow-grade.png COPYONLY)

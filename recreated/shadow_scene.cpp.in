@@ -1,6 +1,8 @@
 #include "shadow_scene.h"
 #include "extra/shadow_camera.h"
 #include "extra/color_grade.h"
+#include "extra/mode.h"
+#include "extra/shadow_cues.h"
 #include <cstdlib>
 
 using d3d9::D3DRS_FILLMODE;
