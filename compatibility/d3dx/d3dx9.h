@@ -67,3 +67,10 @@ inline void D3DXMatrixTranslation(D3DXMATRIXA16* m, float x, float y, float z)
 { *m = {}; m->_41 = x; m->_42 = y; m->_43 = z; }
 void D3DXMatrixPerspectiveFovLH(D3DXMATRIXA16*, float, float, float, float);
 void D3DXVec3Normalize(D3DXVECTOR3*, const D3DXVECTOR3*);
+
+inline void D3DXMatrixRotationX(D3DXMATRIXA16* m, float angle)
+{ D3DXMatrixRotationYawPitchRoll(m, 0, angle, 0); }
+inline void D3DXMatrixRotationY(D3DXMATRIXA16* m, float angle)
+{ D3DXMatrixRotationYawPitchRoll(m, angle, 0, 0); }
+void D3DXMatrixLookAtLH(D3DXMATRIXA16*, const D3DXVECTOR3* eye,
+    const D3DXVECTOR3* target, const D3DXVECTOR3* up);

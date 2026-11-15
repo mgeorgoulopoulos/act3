@@ -106,6 +106,15 @@ HRESULT Device::SetTexture(unsigned stage, BaseTexture* texture)
     constexpr GLenum cubeMap = 0x8513;
     glDisable(GL_TEXTURE_2D);
     glDisable(cubeMap);
+    GLint matrixMode;
+    glGetIntegerv(GL_MATRIX_MODE, &matrixMode);
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();
+    if (texture && texture->framebuffer) {
+        glTranslatef(0, 1, 0);
+        glScalef(1, -1, 1);
+    }
+    glMatrixMode(matrixMode);
     if (texture) {
         glBindTexture(texture->target, texture->name);
         glEnable(texture->target);
@@ -115,6 +124,13 @@ HRESULT Device::SetTexture(unsigned stage, BaseTexture* texture)
 
 HRESULT Device::SetTextureStageState(unsigned stage, TextureStageState state, unsigned value)
 {
+    if (stage == 0 && state == D3DTSS_COLOROP && value == D3DTOP_MODULATE) {
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        return D3D_OK;
+    }
+    if (stage == 0 && ((state == D3DTSS_COLORARG1 && value == D3DTA_DIFFUSE) ||
+                      (state == D3DTSS_COLORARG2 && value == D3DTA_TEXTURE)))
+        return D3D_OK;
     const auto generation = value & 0xffff0000u;
     if (stage != 0 || state != D3DTSS_TEXCOORDINDEX ||
         (value & 0xffffu) > 1 ||
@@ -157,6 +173,12 @@ HRESULT Device::SetRenderState(RenderState state, unsigned value)
             glDisable(capability);
         break;
     }
+    case D3DRS_ALPHATESTENABLE:
+        if (value) glEnable(GL_ALPHA_TEST); else glDisable(GL_ALPHA_TEST);
+        break;
+    case D3DRS_NORMALIZENORMALS:
+        if (value) glEnable(GL_NORMALIZE); else glDisable(GL_NORMALIZE);
+        break;
     case D3DRS_ZWRITEENABLE: glDepthMask(value ? GL_TRUE : GL_FALSE); break;
     case D3DRS_LOCALVIEWER: glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, value != 0); break;
     case D3DRS_SPECULARENABLE:
@@ -183,11 +205,13 @@ HRESULT Device::SetRenderState(RenderState state, unsigned value)
     case D3DRS_SRCBLEND:
     case D3DRS_DESTBLEND:
         if (value != D3DBLEND_ZERO && value != D3DBLEND_ONE &&
-            !(state == D3DRS_DESTBLEND && value == D3DBLEND_INVDESTCOLOR))
+            !(state == D3DRS_SRCBLEND && value == D3DBLEND_SRCCOLOR) &&
+            !(state == D3DRS_DESTBLEND && (value == D3DBLEND_INVDESTCOLOR || value == D3DBLEND_INVSRCCOLOR)))
             return D3DERR_INVALIDCALL;
         (state == D3DRS_SRCBLEND ? sourceBlend : destinationBlend) = value;
-        glBlendFunc(sourceBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO,
+        glBlendFunc(sourceBlend == D3DBLEND_SRCCOLOR ? GL_SRC_COLOR : sourceBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO,
             destinationBlend == D3DBLEND_INVDESTCOLOR ? GL_ONE_MINUS_DST_COLOR :
+                destinationBlend == D3DBLEND_INVSRCCOLOR ? GL_ONE_MINUS_SRC_COLOR :
                 destinationBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO);
         break;
     default: return D3DERR_INVALIDCALL;
@@ -204,7 +228,8 @@ HRESULT Device::SetTransform(TransformState state, const Matrix* matrix)
     case D3DTS_VIEW: view = *matrix; break;
     case D3DTS_PROJECTION:
         projection = *matrix;
-        projection._11 *= projectionHorizontalScale;
+        if (!renderTargetActive)
+            projection._11 *= projectionHorizontalScale;
         break;
     default: return D3DERR_INVALIDCALL;
     }
@@ -213,17 +238,17 @@ HRESULT Device::SetTransform(TransformState state, const Matrix* matrix)
 
 HRESULT Device::SetLight(unsigned index, const Light* light)
 {
-    if (index != 0 || !light || light->Type != D3DLIGHT_DIRECTIONAL)
+    if (index >= 2 || !light || light->Type != D3DLIGHT_DIRECTIONAL)
         return D3DERR_INVALIDCALL;
-    light0 = *light;
+    lights[index] = *light;
     return D3D_OK;
 }
 
 HRESULT Device::LightEnable(unsigned index, int enable)
 {
-    if (index != 0 || (enable && light0.Type != D3DLIGHT_DIRECTIONAL))
+    if (index >= 2 || (enable && lights[index].Type != D3DLIGHT_DIRECTIONAL))
         return D3DERR_INVALIDCALL;
-    light0Enabled = enable != 0;
+    lightEnabled[index] = enable != 0;
     return D3D_OK;
 }
 
@@ -252,22 +277,26 @@ void Device::applyTransforms() const
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(&glProjection.m[0][0]);
     glMatrixMode(GL_MODELVIEW);
-    if (light0Enabled) {
+    glLoadMatrixf(&view.m[0][0]);
+    for (unsigned i = 0; i < 2; ++i) {
+        const GLenum slot = GL_LIGHT0 + i;
+        if (!lightEnabled[i]) {
+            glDisable(slot);
+            continue;
+        }
+        const auto& light = lights[i];
         // D3D stores the direction of travel. OpenGL takes the direction to the light.
-        const GLfloat direction[] = {-light0.Direction.x, -light0.Direction.y,
-            -light0.Direction.z, 0};
-        glLoadMatrixf(&view.m[0][0]);
-        glLightfv(GL_LIGHT0, GL_POSITION, direction);
-        const auto apply = [](GLenum property, const Color& color) {
+        const GLfloat direction[] = {-light.Direction.x, -light.Direction.y,
+            -light.Direction.z, 0};
+        glLightfv(slot, GL_POSITION, direction);
+        const auto apply = [slot](GLenum property, const Color& color) {
             const GLfloat rgba[] = {color.r, color.g, color.b, color.a};
-            glLightfv(GL_LIGHT0, property, rgba);
+            glLightfv(slot, property, rgba);
         };
-        apply(GL_AMBIENT, light0.Ambient);
-        apply(GL_DIFFUSE, light0.Diffuse);
-        apply(GL_SPECULAR, light0.Specular);
-        glEnable(GL_LIGHT0);
-    } else {
-        glDisable(GL_LIGHT0);
+        apply(GL_AMBIENT, light.Ambient);
+        apply(GL_DIFFUSE, light.Diffuse);
+        apply(GL_SPECULAR, light.Specular);
+        glEnable(slot);
     }
     glLoadMatrixf(&modelView.m[0][0]);
 }

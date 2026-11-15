@@ -60,3 +60,8 @@ void GetScreenCenter(int*, int*);
 void RenderQuadAt(IDirect3DDevice9*, int, int, float, unsigned long);
 void RenderSpecificQuad(IDirect3DDevice9*, float, float, float, float, unsigned long);
 void setSceneViewport(int, int);
+
+inline int RenderToTexture(LPDIRECT3DTEXTURE9 texture, PDIRECT3DDEVICE9 device)
+{ return device->BeginRenderTarget(texture) >= 0; }
+inline int EndRenderToTexture(PDIRECT3DDEVICE9 device)
+{ return device->EndRenderTarget() >= 0; }

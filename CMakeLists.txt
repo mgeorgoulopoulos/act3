@@ -39,6 +39,7 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/camera.cpp" camera_code)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS camera.cpp)
 set(mesh_model_code "${model_code}")
 set(model_code "${camera_code}")
+extract_model_method(camera_set "void CameraShot::Set(" "void CameraShot::Add(")
 extract_model_method(camera_constructor "CameraShot::CameraShot()" "CameraShot::CameraShot(float")
 extract_model_method(camera_view "void CameraShot::UpdateViewMatrix(" "D3DXMATRIXA16* CameraShot::ProduceViewMatrix(")
 extract_model_method(camera_sequence "void CameraShot::Cerp(" "D3DXMATRIXA16* CameraSpherical(")
@@ -54,6 +55,7 @@ extract_model_method(act3_bb_indices "void Mesh3DS::SetBBIndices(" "bool Mesh3DS
 extract_model_method(act3_mesh_name "bool Mesh3DS::IsTheName(" "int Mesh3DS::CreateBuffers(")
 extract_model_method(act3_mesh_buffers "int Mesh3DS::CreateBuffers(" "int Mesh3DS::RefreshVertexBuffer(")
 extract_model_method(act3_mesh_render "int Mesh3DS::Render(" "void Mesh3DS::Release(")
+extract_model_method(greetz_material_load "int Material::LoadFrom3DS(" "bool Material::IsTheName(")
 extract_model_method(act3_material_set "bool Material::IsTheName(" "int MeshIso::CreateBuffers(")
 extract_model_method(act3_get_material "Material* MaterialManager::GetMaterial(" "Scene3DS::Scene3DS()")
 extract_model_method(act3_scene_batch "void Scene3DS::BatchRender(" "unsigned long Scene3DS::BatchRenderClipped(")
@@ -106,17 +108,25 @@ string(REPLACE "${shadow_star_texture}"
 configure_file(recreated/shadow_scene.cpp.in generated/shadow_scene.cpp @ONLY)
 target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/shadow_scene.cpp"
     extra/shadow_camera.cpp extra/shadow_focus.cpp)
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS GreetzScene.cpp)
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/GreetzScene.cpp" model_code)
-extract_model_method(blob_initial_balls "m1.pBalls[0].x = -15;" "m1.Update();")
-extract_model_method(blob_motion "m1.pBalls[0].x = 19 * sin" "bool upd = false;")
-extract_model_method(greetz_sync "float Sync(" "bool Scene2::Init(")
-string(REPLACE "if (T >= 3*cycle/4) return" "return" greetz_sync "${greetz_sync}")
-extract_model_method(greetz_cards "float par ;" "sprintf(text_buffer , \"FPS:  %f\"")
-string(REPLACE "Asd.Render(m_pd3dDevice);" "drawGreetCard(device, par);" greetz_cards "${greetz_cards}")
-configure_file(recreated/blob_preview.cpp.in generated/blob_preview.cpp @ONLY)
-target_sources(act3 PRIVATE marching.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/blob_preview.cpp")
-target_include_directories(act3 PRIVATE recreated)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS GreetzScene.cpp GreetzScene.h)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/GreetzScene.h" greetz_header)
+string(REPLACE [=[#include "DemoEngine.h"]=] [=[#include "recreated/scene_host.h"
+#include "camera.h"]=] greetz_header "${greetz_header}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.h" "${greetz_header}")
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/GreetzScene.cpp" greetz_source)
+string(REPLACE [=[#include "GreetzScene.h"]=] [=[#include "greetz_scene.h"
+#include <cmath>
+using namespace d3d9;
+using std::sin;]=] greetz_source "${greetz_source}")
+string(REPLACE "if (T >= 3*cycle/4) return" "return" greetz_source "${greetz_source}")
+string(REPLACE [=[if (!ma1.LoadFrom3DS("data\geometry\Eggplant.3ds" , "PlastiKPurple01"))]=]
+    [=[char materialFile[] = "data/geometry/eggplant.3ds";
+    char materialName[] = "PlastiKPurple01";
+    if (!ma1.LoadFrom3DS(materialFile, materialName))]=] greetz_source "${greetz_source}")
+string(REPLACE "Greetz/Deus.png" "Greetz/deus.png" greetz_source "${greetz_source}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp" "${greetz_source}")
+target_sources(act3 PRIVATE marching.cpp 3ds.cpp recreated/blob_preview.cpp
+    compatibility/d3d9/render_target.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")
 target_sources(act3 PRIVATE TextureManager.cpp compatibility/d3dx/texture.cpp
@@ -126,7 +136,7 @@ target_include_directories(act3 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
 set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3/data/geometry"
     CACHE PATH "Directory containing the original ACT3 geometry")
 target_include_directories(act3 PRIVATE compatibility/d3dx)
-foreach(asset test.s3d c_room.s3d plants.cam shadow.s3d room.s3d shadow.cam)
+foreach(asset test.s3d c_room.s3d plants.cam shadow.s3d room.s3d shadow.cam eggplant.3ds)
     configure_file("${ACT3_GEOMETRY_DIR}/${asset}" "assets/data/geometry/${asset}" COPYONLY)
 endforeach()
 foreach(asset circuit.png metal.dds chrome.dds dna.png star.png lens1.png lens2.png lens3.png lens4.png room_sna.png)

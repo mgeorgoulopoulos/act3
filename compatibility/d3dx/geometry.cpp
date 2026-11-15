@@ -100,3 +100,26 @@ D3DXVECTOR3* D3DXPlaneIntersectLine(D3DXVECTOR3* out, const D3DXPLANE* plane,
     *out = {a->x + t*direction.x, a->y + t*direction.y, a->z + t*direction.z};
     return out;
 }
+
+void D3DXMatrixLookAtLH(D3DXMATRIXA16* m, const D3DXVECTOR3* eye,
+    const D3DXVECTOR3* target, const D3DXVECTOR3* up)
+{
+    const auto cross = [](D3DXVECTOR3 a, D3DXVECTOR3 b) {
+        return D3DXVECTOR3{a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x};
+    };
+    const auto dot = [](D3DXVECTOR3 a, D3DXVECTOR3 b) {
+        return a.x*b.x + a.y*b.y + a.z*b.z;
+    };
+    D3DXVECTOR3 forward{target->x-eye->x, target->y-eye->y, target->z-eye->z};
+    D3DXVec3Normalize(&forward, &forward);
+    auto right = cross(*up, forward);
+    D3DXVec3Normalize(&right, &right);
+    const auto vertical = cross(forward, right);
+    *m = {};
+    m->_11 = right.x; m->_21 = right.y; m->_31 = right.z;
+    m->_12 = vertical.x; m->_22 = vertical.y; m->_32 = vertical.z;
+    m->_13 = forward.x; m->_23 = forward.y; m->_33 = forward.z;
+    m->_41 = -dot(right, *eye);
+    m->_42 = -dot(vertical, *eye);
+    m->_43 = -dot(forward, *eye);
+}

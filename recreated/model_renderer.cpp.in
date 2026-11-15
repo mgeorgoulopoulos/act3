@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cmath>
 #include "marching.h"
+#include "3ds.h"
 #include <string>
 
 using d3d9::D3DTS_WORLD;
@@ -13,6 +14,7 @@ using d3d9::D3DFMT_INDEX16;
 using d3d9::D3DFVF_DIFFUSE; using d3d9::D3DTS_VIEW;
 
 TextureManager TexMan;
+static char text_buffer1[1000];
 
 @act3_mesh_constructor@
 @shadow_mesh_twist@
@@ -23,6 +25,7 @@ TextureManager TexMan;
 @act3_mesh_name@
 @act3_mesh_buffers@
 @act3_mesh_render@
+@greetz_material_load@
 @act3_material_set@
 @act3_get_material@
 @act3_scene_constructor@

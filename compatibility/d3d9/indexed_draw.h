@@ -22,6 +22,7 @@ struct Material {
 struct BaseTexture {
     unsigned name;
     unsigned target;
+    unsigned framebuffer{}, depth{}, width{}, height{};
     void Release();
 };
 using HRESULT = std::int32_t;
@@ -32,20 +33,23 @@ constexpr unsigned D3DFVF_XYZ = 0x002;
 constexpr unsigned D3DFVF_NORMAL = 0x010;
 constexpr unsigned D3DFVF_DIFFUSE = 0x040;
 constexpr unsigned D3DFVF_TEX1 = 0x100;
+constexpr unsigned D3DUSAGE_RENDERTARGET = 1;
 constexpr unsigned D3DUSAGE_WRITEONLY = 0x008;
 enum PrimitiveType { D3DPT_TRIANGLELIST = 4 };
 enum Pool { D3DPOOL_DEFAULT = 0, D3DPOOL_SYSTEMMEM = 2 };
-enum Format { D3DFMT_INDEX16 = 101, D3DFMT_DXT1 = 0x31545844 };
+enum Format { D3DFMT_A8R8G8B8 = 21, D3DFMT_INDEX16 = 101, D3DFMT_DXT1 = 0x31545844 };
 enum TransformState { D3DTS_VIEW = 2, D3DTS_PROJECTION = 3, D3DTS_WORLD = 256 };
-enum TextureStageState { D3DTSS_TEXCOORDINDEX = 11 };
+enum TextureStageState { D3DTSS_COLOROP = 1, D3DTSS_COLORARG1 = 2, D3DTSS_COLORARG2 = 3, D3DTSS_TEXCOORDINDEX = 11 };
 enum RenderState {
-    D3DRS_FILLMODE = 8,
+    D3DRS_FILLMODE = 8, D3DRS_ALPHATESTENABLE = 15, D3DRS_NORMALIZENORMALS = 143,
     D3DRS_ZENABLE = 7, D3DRS_ZWRITEENABLE = 14, D3DRS_SRCBLEND = 19,
     D3DRS_DESTBLEND = 20, D3DRS_CULLMODE = 22, D3DRS_ALPHABLENDENABLE = 27,
     D3DRS_SPECULARENABLE = 29, D3DRS_LIGHTING = 137, D3DRS_AMBIENT = 139,
     D3DRS_LOCALVIEWER = 142
 };
 enum CullMode { D3DCULL_NONE = 1, D3DCULL_CW = 2, D3DCULL_CCW = 3 };
+constexpr unsigned D3DBLEND_SRCCOLOR = 3, D3DBLEND_INVSRCCOLOR = 4;
+constexpr unsigned D3DTOP_MODULATE = 4, D3DTA_DIFFUSE = 0, D3DTA_TEXTURE = 2;
 constexpr unsigned D3DBLEND_ONE = 2;
 constexpr unsigned D3DBLEND_ZERO = 1;
 constexpr unsigned D3DBLEND_INVDESTCOLOR = 10;
@@ -108,6 +112,10 @@ public:
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
 
+    HRESULT CreateTexture(unsigned width, unsigned height, unsigned levels, unsigned usage,
+        Format format, Pool pool, BaseTexture** result, void* sharedHandle);
+    HRESULT BeginRenderTarget(BaseTexture* texture);
+    HRESULT EndRenderTarget();
     HRESULT CreateVertexBuffer(unsigned length, unsigned usage, unsigned format,
         Pool pool, VertexBuffer** buffer, void** sharedHandle);
     HRESULT CreateIndexBuffer(unsigned length, unsigned usage, Format format,
@@ -155,8 +163,10 @@ private:
     unsigned fvf = 0;
     Matrix world, view, projection;
     float projectionHorizontalScale = 1;
-    Light light0{};
-    bool light0Enabled = false;
+    Light lights[2]{};
+    bool lightEnabled[2]{};
+    bool renderTargetActive = false;
+    int previousFramebuffer{}, previousViewport[4]{};
     bool inScene = false;
     unsigned sourceBlend = D3DBLEND_ONE;
     unsigned destinationBlend = 1; // D3DBLEND_ZERO

@@ -63,12 +63,6 @@ bool readImage(const std::string& path, unsigned& width, unsigned& height,
 }
 }
 
-void d3d9::BaseTexture::Release()
-{
-    glDeleteTextures(1, &name);
-    delete this;
-}
-
 d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file,
     unsigned width, unsigned height, unsigned levels, DWORD usage, d3d9::Format format,
     d3d9::Pool pool, DWORD filter, DWORD mipFilter, DWORD colorKey,
@@ -130,6 +124,31 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
         GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+    if (name.compare(0, 7, "Greetz/") == 0) {
+        // D3DX_DEFAULT provides mip levels for the minified greeting cards.
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        for (int level = 1; width > 1 || height > 1; ++level) {
+            const unsigned nextWidth = width > 1 ? width / 2 : 1;
+            const unsigned nextHeight = height > 1 ? height / 2 : 1;
+            const unsigned columns = width > 1 ? 2 : 1;
+            const unsigned rows = height > 1 ? 2 : 1;
+            for (unsigned y = 0; y < nextHeight; ++y) {
+                for (unsigned x = 0; x < nextWidth; ++x) {
+                    for (unsigned c = 0; c < 4; ++c) {
+                        unsigned sum = 0;
+                        for (unsigned dy = 0; dy < rows; ++dy)
+                            for (unsigned dx = 0; dx < columns; ++dx)
+                                sum += pixels[4 * ((y * rows + dy) * width + x * columns + dx) + c];
+                        pixels[4 * (y * nextWidth + x) + c] = sum / (rows * columns);
+                    }
+                }
+            }
+            width = nextWidth;
+            height = nextHeight;
+            glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA, width, height, 0,
+                GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        }
+    }
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(previous));
     if (glGetError() != GL_NO_ERROR) {
         texture->Release();

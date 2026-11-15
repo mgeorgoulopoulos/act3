@@ -28,3 +28,5 @@ void D3DXMatrixRotationYawPitchRoll(D3DXMATRIXA16* out,
 @camera_view@
 @camera_direction@
 @camera_sequence@
+
+@camera_set@
