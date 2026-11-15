@@ -58,6 +58,13 @@ void preview::drawBlob(d3d9::Device& device, int width, int height, unsigned m_d
     light.Specular = {0.6f, 0.6f, 0.9f, 1};
     device.SetLight(0, &light);
     device.LightEnable(0, TRUE);
+
+    // Opposing fill from Scene2::Render.
+    light.Direction = {0, 0.287f, -0.958f};
+    light.Diffuse = {0.9f, 0.9f, 0.9f, 1};
+    light.Specular = {0.7f, 0.7f, 0.4f, 1};
+    device.SetLight(1, &light);
+    device.LightEnable(1, TRUE);
     device.SetRenderState(D3DRS_AMBIENT, 0x00202020);
     device.SetRenderState(D3DRS_LIGHTING, TRUE);
     device.SetRenderState(D3DRS_SPECULARENABLE, TRUE);
