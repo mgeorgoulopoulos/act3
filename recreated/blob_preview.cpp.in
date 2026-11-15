@@ -32,6 +32,16 @@ bool createGrid(MeshGrid& grid, d3d9::Device& device, float width, float height)
     return grid.RefreshBuffers() != 0;
 }
 
+void drawGreetCard(d3d9::Device& device, float scale)
+{
+    // Prevent minification from turning the collapsed lettering into bright streaks.
+    const float phase = std::clamp((scale - 0.01f) / 0.17f, 0.f, 1.f);
+    const auto intensity = static_cast<unsigned>(255 * phase * phase * (3 - 2 * phase));
+    Asd.ApplyColor(0xff000000u | intensity * 0x010101u);
+    Asd.RefreshBuffers();
+    Asd.Render(&device);
+}
+
 void drawGreetings(d3d9::Device* m_pd3dDevice, unsigned m_dwTime)
 {
     using namespace d3d9;

@@ -113,6 +113,7 @@ extract_model_method(blob_motion "m1.pBalls[0].x = 19 * sin" "bool upd = false;"
 extract_model_method(greetz_sync "float Sync(" "bool Scene2::Init(")
 string(REPLACE "if (T >= 3*cycle/4) return" "return" greetz_sync "${greetz_sync}")
 extract_model_method(greetz_cards "float par ;" "sprintf(text_buffer , \"FPS:  %f\"")
+string(REPLACE "Asd.Render(m_pd3dDevice);" "drawGreetCard(device, par);" greetz_cards "${greetz_cards}")
 configure_file(recreated/blob_preview.cpp.in generated/blob_preview.cpp @ONLY)
 target_sources(act3 PRIVATE marching.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/blob_preview.cpp")
 target_include_directories(act3 PRIVATE recreated)
