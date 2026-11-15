@@ -115,6 +115,7 @@ string(REPLACE [=[#include "DemoEngine.h"]=] [=[#include "recreated/scene_host.h
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.h" "${greetz_header}")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/GreetzScene.cpp" greetz_source)
 string(REPLACE [=[#include "GreetzScene.h"]=] [=[#include "greetz_scene.h"
+#include "extra/greetz_layout.h"
 #include <cmath>
 using namespace d3d9;
 using std::sin;]=] greetz_source "${greetz_source}")
@@ -124,8 +125,12 @@ string(REPLACE [=[if (!ma1.LoadFrom3DS("data\geometry\Eggplant.3ds" , "PlastiKPu
     char materialName[] = "PlastiKPurple01";
     if (!ma1.LoadFrom3DS(materialFile, materialName))]=] greetz_source "${greetz_source}")
 string(REPLACE "Greetz/Deus.png" "Greetz/deus.png" greetz_source "${greetz_source}")
+string(REPLACE "float par ;" "if (!extra::drawGreetz(*m_pd3dDevice, Asd, m_dwTime)) { float par ;"
+    greetz_source "${greetz_source}")
+string(REPLACE "Asd.Render(m_pd3dDevice);\n\n\tsprintf" "Asd.Render(m_pd3dDevice); }\n\n\tsprintf"
+    greetz_source "${greetz_source}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp" "${greetz_source}")
-target_sources(act3 PRIVATE marching.cpp 3ds.cpp recreated/blob_preview.cpp
+target_sources(act3 PRIVATE marching.cpp 3ds.cpp recreated/blob_preview.cpp extra/greetz_layout.cpp
     compatibility/d3d9/render_target.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/D3DX9.h"
     "#include \"compatibility/d3dx/d3dx9.h\"\n")
