@@ -56,6 +56,8 @@ extract_model_method(act3_mesh_render "int Mesh3DS::Render(" "void Mesh3DS::Rele
 extract_model_method(act3_material_set "bool Material::IsTheName(" "int MeshIso::CreateBuffers(")
 extract_model_method(act3_get_material "Material* MaterialManager::GetMaterial(" "Scene3DS::Scene3DS()")
 extract_model_method(act3_scene_batch "void Scene3DS::BatchRender(" "unsigned long Scene3DS::BatchRenderClipped(")
+extract_model_method(shadow_scene_render "void Scene3DS::Render(" "unsigned long Scene3DS::RenderClipped(")
+target_sources(act3 PRIVATE recreated/shadow_preview.cpp)
 extract_model_method(act3_scene_constructor "Scene3DS::Scene3DS()" "int Scene3DS::LoadFrom3DS(")
 extract_model_method(act3_get_object "Mesh3DS* Scene3DS::GetObject(" "void Scene3DS::RenderObject(")
 extract_model_method(act3_scene_load "int Scene3DS::LoadFromS3D(" "void Scene3DS::SetTransform(")
@@ -75,10 +77,10 @@ target_include_directories(act3 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
 set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3/data/geometry"
     CACHE PATH "Directory containing the original ACT3 geometry")
 target_include_directories(act3 PRIVATE compatibility/d3dx)
-foreach(asset test.s3d c_room.s3d plants.cam)
+foreach(asset test.s3d c_room.s3d plants.cam shadow.s3d room.s3d shadow.cam)
     configure_file("${ACT3_GEOMETRY_DIR}/${asset}" "assets/data/geometry/${asset}" COPYONLY)
 endforeach()
-foreach(asset circuit.png metal.dds star.png lens1.png lens2.png lens3.png lens4.png)
+foreach(asset circuit.png metal.dds star.png lens1.png lens2.png lens3.png lens4.png room_sna.png)
     configure_file("${ACT3_GEOMETRY_DIR}/../textures/${asset}" "assets/textures/${asset}" COPYONLY)
 endforeach()
 target_compile_definitions(act3 PRIVATE ACT3_ASSET_ROOT="${CMAKE_CURRENT_BINARY_DIR}/assets"

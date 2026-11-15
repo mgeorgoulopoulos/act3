@@ -24,6 +24,7 @@ TextureManager TexMan;
 @act3_scene_constructor@
 @act3_get_object@
 @act3_scene_batch@
+@shadow_scene_render@
 @act3_scene_load@
 @mesh_transform@
 @mesh_release@

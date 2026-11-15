@@ -35,6 +35,7 @@ int reportError(const char* message)
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
 {
     extra::enabled = std::strcmp(args, "--extra") == 0;
+    preview::shadowSelected = std::strcmp(args, "--shadow") == 0;
     SetProcessDPIAware();
     WNDCLASSA windowType{};
     windowType.style = CS_OWNDC;
@@ -61,7 +62,9 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
         }
     }
     AdjustWindowRect(&area, WS_OVERLAPPEDWINDOW, FALSE);
-    HWND window = CreateWindowA(windowClass, extra::enabled ? "ACT3 | Extra" : windowTitle,
+    const char* title = preview::shadowSelected ? "ACT3 | Shadow" :
+        (extra::enabled ? "ACT3 | Extra" : windowTitle);
+    HWND window = CreateWindowA(windowClass, title,
         WS_OVERLAPPEDWINDOW, x, y, area.right - area.left, area.bottom - area.top,
         nullptr, nullptr, instance, nullptr);
     if (!window)

@@ -1,4 +1,5 @@
 #include "mesh_preview.h"
+#include "shadow_preview.h"
 #include "../extra/mode.h"
 #include "../extra/eggplant_grade.h"
 #ifdef _WIN32
@@ -35,6 +36,12 @@ bool preview::load()
     fs::current_path(ACT3_ASSET_ROOT, error);
     if (error)
         return false;
+    if (shadowSelected) {
+        const bool loaded = loadShadow(device);
+        fs::current_path(previous, error);
+        playbackStart = std::chrono::steady_clock::now();
+        return loaded && !error;
+    }
     host.m_pd3dDevice = &device;
     scene.m_pHostDemo = &host;
     scene.m_dwDuration = 40000;
@@ -56,6 +63,10 @@ void preview::draw(int width, int height)
     glColor3f(1, 1, 1);
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - playbackStart).count();
+    if (shadowSelected) {
+        drawShadow(device, static_cast<unsigned>(elapsed % 56000));
+        return;
+    }
     scene.m_dwTime = static_cast<DWORD>(elapsed % scene.m_dwDuration);
     scene.Render();
     extra::postProcessEggplants(width, height);
@@ -64,7 +75,9 @@ void preview::draw(int width, int height)
 void preview::releaseTextures()
 {
     extra::releaseEggplantGrade();
-    if (scene.m_pd3dDevice)
+    if (shadowSelected)
+        releaseShadow();
+    else if (scene.m_pd3dDevice)
         scene.Release();
     if (scene.CubeMap)
         scene.CubeMap->Release();
