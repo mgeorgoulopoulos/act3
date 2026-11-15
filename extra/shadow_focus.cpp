@@ -1,12 +1,14 @@
 #include "shadow_focus.h"
 #include "shadow_camera.h"
 #include "mode.h"
+#include "shadow_cues.h"
 #include <cstdint>
 #include <cstdio>
 #include <cmath>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #else
 #include <GL/glx.h>
@@ -42,13 +44,13 @@ ObjectFn useProgram, deleteProgram;
 ActiveTexture activeTexture;
 UniformFloat uniformFloat;
 UniformVec2 uniformVec2;
-GLint focusLocation, strengthLocation, texelLocation;
+GLint focusLocation, strengthLocation, burstLocation, flashLocation, texelLocation;
 
 const char* fragment = R"(
 #version 120
 uniform sampler2D image;
 uniform sampler2D depth;
-uniform float focus, strength;
+uniform float focus, strength, burst, flash;
 uniform vec2 texel;
 float distanceAt(vec2 uv) {
     return 1.0 / (1.0 - texture2D(depth, uv).r * 0.9999);
@@ -58,19 +60,20 @@ void main() {
     vec4 center = texture2D(image, uv);
     float z = distanceAt(uv);
     float blur = smoothstep(0.09, 0.65, abs(focus / z - 1.0));
+    float radius = max(blur * strength, burst);
     vec3 total = center.rgb * 2.0;
     float weights = 2.0;
     for (int i = 0; i < 16; ++i) {
         float angle = float(i) * 2.399963;
         float ring = sqrt((float(i) + 0.5) / 16.0);
-        vec2 tap = uv + vec2(cos(angle), sin(angle)) * (ring * blur * strength * texel);
+        vec2 tap = uv + vec2(cos(angle), sin(angle)) * (ring * radius * texel);
         float sampleZ = distanceAt(tap);
         // A blurred backdrop must not pull color across the focused silhouette.
-        float weight = smoothstep(0.65, 0.95, sampleZ / z);
+        float weight = mix(smoothstep(0.65, 0.95, sampleZ / z), 1.0, smoothstep(0.0, 12.0, burst));
         total += texture2D(image, tap).rgb * weight;
         weights += weight;
     }
-    gl_FragColor = vec4(total / weights, center.a);
+    gl_FragColor = vec4(mix(total / weights, vec3(1.0, 0.98, 0.94), flash), center.a);
 }
 )";
 
@@ -115,6 +118,8 @@ bool initialize()
     uniformInt(locate(program, "depth"), 1);
     focusLocation = locate(program, "focus");
     strengthLocation = locate(program, "strength");
+    burstLocation = locate(program, "burst");
+    flashLocation = locate(program, "flash");
     texelLocation = locate(program, "texel");
     useProgram(0);
     glGenTextures(2, images);
@@ -125,7 +130,10 @@ bool initialize()
 void extra::postProcessShadow(int width, int height, unsigned time)
 {
     const float focus = shadowDollyDistance(time);
-    if (!enabled || !focus)
+    const float negative = shadowNegativePulse(time, 220.f);
+    const float flash = shadowNegativePulse(time, 100.f);
+    const float burst = std::max(68.f * shadowCutBlur(time), 56.f * negative);
+    if (!enabled || (!focus && !burst))
         return;
     if (!attempted) {
         attempted = true;
@@ -172,8 +180,11 @@ void extra::postProcessShadow(int width, int height, unsigned time)
     useProgram(program);
     uniformFloat(focusLocation, focus);
     uniformVec2(texelLocation, 1.f / width, 1.f / height);
-    const float phase = (time - 20000) / 7000.f;
-    uniformFloat(strengthLocation, (9.f * height / 512) * std::sin(3.14159265f * phase));
+    const float phase = focus ? (time - 20000) / 7000.f : 0.f;
+    const float scale = height / 512.f;
+    uniformFloat(strengthLocation, 9.f * scale * std::sin(3.14159265f * phase));
+    uniformFloat(burstLocation, burst * scale);
+    uniformFloat(flashLocation, 0.94f * flash);
     glBegin(GL_QUADS);
     glTexCoord2f(0, 0); glVertex2f(-1, -1);
     glTexCoord2f(1, 0); glVertex2f(1, -1);

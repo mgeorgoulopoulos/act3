@@ -1,5 +1,6 @@
 #include "shadow_camera.h"
 #include "mode.h"
+#include "shadow_cues.h"
 #include "../compatibility/d3d9/indexed_draw.h"
 
 float extra::shadowDollyDistance(unsigned milliseconds)
@@ -17,7 +18,14 @@ void extra::applyShadowCamera(d3d9::Device& device, unsigned milliseconds,
     d3d9::Matrix& projection)
 {
     const float distance = shadowDollyDistance(milliseconds);
-    if (!enabled || !distance)
+    if (!enabled)
+        return;
+
+    const float kick = 1.f - 0.38f * shadowNegativePulse(milliseconds, 220.f);
+    projection._11 *= kick;
+    projection._22 *= kick;
+
+    if (!distance)
         return;
 
     // Keep the figure between the camera and the central star.
