@@ -76,7 +76,7 @@ public:
 	CameraSequence();
 	~CameraSequence();
 
-	bool Load(char* filename);
+	bool Load(const char* filename);
 	void FindFrames(unsigned long time);
 	void Cerp(unsigned long time);
 	void UpdateViewMatrix(IDirect3DDevice9* pDevice);

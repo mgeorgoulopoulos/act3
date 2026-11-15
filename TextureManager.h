@@ -23,10 +23,10 @@ public:
 	bool				Valid;
 
 	// Methods
-	int			Load(LPDIRECT3DDEVICE9 pDevice ,char* filename);
+	int			Load(LPDIRECT3DDEVICE9 pDevice ,const char* filename);
 	void		Release();
 	void		Set(LPDIRECT3DDEVICE9 pDevice , unsigned long sampler);
-	bool		IsTheName(char* n);
+	bool		IsTheName(const char* n);
 
 	// Constructor/ Destructor
 	TextureEntry();
@@ -45,12 +45,12 @@ public:
 	void Release();
 
 	int				LoadTexture(LPDIRECT3DDEVICE9 pDevice , 
-								char* filename);
-	void			DeleteTexture(char* n);
+								const char* filename);
+	void			DeleteTexture(const char* n);
 	void			SetTexture(LPDIRECT3DDEVICE9 pDevice , 
 								unsigned long sampler,
-								char* n);
-	TextureEntry*	FindEntry(char* n);
+								const char* n);
+	TextureEntry*	FindEntry(const char* n);
 	void SetNoTexture(LPDIRECT3DDEVICE9 pDevice);
 
 }; // End class TextureManager

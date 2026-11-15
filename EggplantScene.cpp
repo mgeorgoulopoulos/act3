@@ -225,6 +225,7 @@ void Scene1::Render()
 	// Projection Matrix
 	D3DXMATRIXA16 matProj;
 	D3DXMatrixPerspectiveFovLH( &matProj, D3DX_PI/4, 4.0f/3.0f, 1.0f, 10000.0f );
+	extra::applyEggplantCamera(*m_pd3dDevice, m_dwTime, matProj);
 	m_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );
 
 	//********************************
@@ -351,7 +352,7 @@ void Scene1::Render()
 
 	// Render the reflections
 	m_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
-	for (index_x=0;index_x<NUM_ROWS;index_x++)
+	for (unsigned long index_x=0;index_x<NUM_ROWS;index_x++)
 	{
 		for (unsigned long index_y=0;index_y<NUM_ROWS;index_y++)
 		{
@@ -390,7 +391,7 @@ void Scene1::Render()
 	m_pd3dDevice->SetStreamSource(0 , pEgg->pVB , 0 , sizeof(MODEL_VERTEX));
 	// Set the index buffer
 	m_pd3dDevice->SetIndices( pEgg->pIB );
-	for (index_x=0;index_x<NUM_ROWS;index_x++)
+	for (unsigned long index_x=0;index_x<NUM_ROWS;index_x++)
 	{
 		for (unsigned long index_y=0;index_y<NUM_ROWS;index_y++)
 		{
@@ -424,7 +425,7 @@ void Scene1::Render()
 		}
 	}
 
-	for (index_x=0;index_x<NUM_ROWS;index_x++)
+	for (unsigned long index_x=0;index_x<NUM_ROWS;index_x++)
 	{
 		for (unsigned long index_y=0;index_y<NUM_ROWS;index_y++)
 		{
@@ -489,7 +490,7 @@ void Scene1::Render()
 	// Set the index buffer
 	m_pd3dDevice->SetIndices( pStem->pIB );
 	// Render the eggplants
-	for (index_x=0;index_x<NUM_ROWS;index_x++)
+	for (unsigned long index_x=0;index_x<NUM_ROWS;index_x++)
 	{
 		for (unsigned long index_y=0;index_y<NUM_ROWS;index_y++)
 		{
@@ -523,7 +524,7 @@ void Scene1::Render()
 	}
 
 	// Render the eggplants
-	for (index_x=0;index_x<NUM_ROWS;index_x++)
+	for (unsigned long index_x=0;index_x<NUM_ROWS;index_x++)
 	{
 		for (unsigned long index_y=0;index_y<NUM_ROWS;index_y++)
 		{
@@ -561,7 +562,7 @@ void Scene1::Render()
 	pMatEgg->Set(m_pd3dDevice , CubeMap);
 	// Set the index buffer
 	m_pd3dDevice->SetIndices( pEgg->pIB );
-	for (index_x=0;index_x<NUM_ROWS;index_x++)
+	for (unsigned long index_x=0;index_x<NUM_ROWS;index_x++)
 	{
 		for (unsigned long index_y=0;index_y<NUM_ROWS;index_y++)
 		{
@@ -594,7 +595,7 @@ void Scene1::Render()
 		}
 	}
 
-	for (index_x=0;index_x<NUM_ROWS;index_x++)
+	for (unsigned long index_x=0;index_x<NUM_ROWS;index_x++)
 	{
 		for (unsigned long index_y=0;index_y<NUM_ROWS;index_y++)
 		{

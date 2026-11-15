@@ -7,6 +7,8 @@
 
 #include "DemoEngine.h"
 
+#include "camera.h"
+
 // CLASS DECLARATIONS /////////////////////////////
 
 

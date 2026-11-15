@@ -5,6 +5,7 @@
 
 #include "model.h"
 #include "TextureManager.h"
+#include <string>
 
 // GLOBALS ///////////////////////////////////////////////////
 
@@ -3538,11 +3539,14 @@ void Scene3DS::SaveToS3D(char* filename)
 	fclose(output);
 }
 
-int Scene3DS::LoadFromS3D(char* filename , LPDIRECT3DDEVICE9 pDevice)
+int Scene3DS::LoadFromS3D(const char* filename , LPDIRECT3DDEVICE9 pDevice)
 {
 
 	// Open the input file
-	FILE* input = fopen(filename , "rb");
+	std::string path(filename);
+	for (char& character : path)
+		if (character == '\\') character = '/';
+	FILE* input = fopen(path.c_str() , "rb");
 
 	if (!input) return 0;
 

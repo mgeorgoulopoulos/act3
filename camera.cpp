@@ -353,7 +353,7 @@ CameraSequence::~CameraSequence()
 
 }
 
-bool CameraSequence::Load(char* filename)
+bool CameraSequence::Load(const char* filename)
 {
 
 	FILE* input;

@@ -299,7 +299,7 @@ public:
 
 	// S3D file type
 	void			SaveToS3D(char* filename);
-	int				LoadFromS3D(char* filename , LPDIRECT3DDEVICE9 pDevice);
+	int				LoadFromS3D(const char* filename , LPDIRECT3DDEVICE9 pDevice);
 
 	// Transform
 	void	ClearTransform();

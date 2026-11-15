@@ -23,7 +23,7 @@ void TextureEntry::Release()
 		pTex->Release();
 }
 
-int TextureEntry::Load(LPDIRECT3DDEVICE9 pDevice ,char* filename)
+int TextureEntry::Load(LPDIRECT3DDEVICE9 pDevice ,const char* filename)
 {
 	// return zero if no name
 	if (!filename[0]) return 0;
@@ -86,7 +86,7 @@ void TextureEntry::Set(LPDIRECT3DDEVICE9 pDevice ,
 	else pDevice->SetTexture(sampler , 0);
 }
 
-bool TextureEntry::IsTheName(char* n)
+bool TextureEntry::IsTheName(const char* n)
 {
 
 	int x=0;
@@ -122,7 +122,7 @@ void TextureManager::Release()
 	}
 }
 
-TextureEntry* TextureManager::FindEntry(char*n)
+TextureEntry* TextureManager::FindEntry(const char* n)
 {
 	TextureEntry *entry;
 	entry = pFirstEntry;
@@ -138,7 +138,7 @@ TextureEntry* TextureManager::FindEntry(char*n)
 
 
 int	TextureManager::LoadTexture(LPDIRECT3DDEVICE9 pDevice , 
-								char* filename)
+								const char* filename)
 {
 	if (pFirstEntry)
 	{
@@ -175,7 +175,7 @@ int	TextureManager::LoadTexture(LPDIRECT3DDEVICE9 pDevice ,
 }
 
 
-void TextureManager::DeleteTexture(char* n)
+void TextureManager::DeleteTexture(const char* n)
 {
 	// first try to locate the entry
 	TextureEntry* entry = FindEntry(n);
@@ -205,7 +205,7 @@ void TextureManager::DeleteTexture(char* n)
 
 void TextureManager::SetTexture(LPDIRECT3DDEVICE9 pDevice , 
 							unsigned long sampler,
-							char* n)
+							const char* n)
 {
 	if (!n)
 	{
