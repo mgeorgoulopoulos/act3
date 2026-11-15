@@ -1,8 +1,8 @@
 #pragma once
-namespace d3d9 { class Device; }
+namespace d3d9 { class Device; struct Matrix; }
 
 namespace extra {
 inline bool enabled = false;
-bool applyEggplantCamera(d3d9::Device&, unsigned milliseconds);
-float eggplantFovScale(unsigned milliseconds);
+void setEggplantViewport(int width, int height);
+void applyEggplantCamera(d3d9::Device&, unsigned milliseconds, d3d9::Matrix& projection);
 }

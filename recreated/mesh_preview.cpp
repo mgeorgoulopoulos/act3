@@ -51,13 +51,12 @@ void preview::draw(int width, int height)
         return;
     setSceneViewport(width, height);
     glViewport(0, 0, width, height);
-    device.SetProjectionAspectScale(extra::enabled ? (4.f * height) / (3.f * width) : 1.f);
+    extra::setEggplantViewport(width, height);
     glEnable(GL_NORMALIZE);
     glColor3f(1, 1, 1);
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - playbackStart).count();
     scene.m_dwTime = static_cast<DWORD>(elapsed % scene.m_dwDuration);
-    device.SetProjectionFovScale(extra::eggplantFovScale(scene.m_dwTime));
     scene.Render();
     extra::postProcessEggplants(width, height);
 }

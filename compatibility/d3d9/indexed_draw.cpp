@@ -195,11 +195,7 @@ HRESULT Device::SetTransform(TransformState state, const Matrix* matrix)
     switch (state) {
     case D3DTS_WORLD: world = *matrix; break;
     case D3DTS_VIEW: view = *matrix; break;
-    case D3DTS_PROJECTION:
-        projection = *matrix;
-        projection._11 *= projectionAspectScale * projectionFovScale;
-        projection._22 *= projectionFovScale;
-        break;
+    case D3DTS_PROJECTION: projection = *matrix; break;
     default: return D3DERR_INVALIDCALL;
     }
     return D3D_OK;

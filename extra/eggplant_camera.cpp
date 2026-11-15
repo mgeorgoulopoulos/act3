@@ -8,6 +8,7 @@ struct Pose { Vector3 eye, target; float roll; };
 struct Shot { float end; Pose from, to; };
 constexpr float pi = 3.14159265358979323846f;
 constexpr unsigned harpStartMs = 29186;
+float viewportAspect = 4.f / 3.f;
 const Shot shots[] = {
     // Pull back from the light and reveal the still figures below it.
     {8, {{975,298,0}, {1000,300,0}, 0}, {{-125,128,-195}, {595,172,-15}, 0}},
@@ -35,10 +36,9 @@ Vector3 unit(Vector3 v)
 }
 }
 
-bool extra::applyEggplantCamera(d3d9::Device& device, unsigned milliseconds)
+namespace {
+bool applyCameraPose(d3d9::Device& device, unsigned milliseconds)
 {
-    if (!enabled)
-        return false;
     const auto time = milliseconds % 40000;
     // Keep the original rapid turns and roll at their recorded timestamps.
     if (time >= harpStartMs)
@@ -106,10 +106,8 @@ bool extra::applyEggplantCamera(d3d9::Device& device, unsigned milliseconds)
     return false;
 }
 
-float extra::eggplantFovScale(unsigned milliseconds)
+float eggplantFovScale(unsigned milliseconds)
 {
-    if (!enabled)
-        return 1;
     struct Cue { int time; float fov; };
     // Peaks align with measured transients in the 2:06 soundtrack excerpt.
     constexpr Cue cues[] = {{3460, 53}, {12680, 38}};
@@ -123,4 +121,21 @@ float extra::eggplantFovScale(unsigned milliseconds)
         }
     }
     return 1;
+}
+}
+
+void extra::setEggplantViewport(int width, int height)
+{
+    viewportAspect = static_cast<float>(width) / height;
+}
+
+void extra::applyEggplantCamera(d3d9::Device& device, unsigned milliseconds,
+    d3d9::Matrix& projection)
+{
+    if (!enabled)
+        return;
+    const float fovScale = eggplantFovScale(milliseconds);
+    projection._11 *= fovScale * (4.f / 3.f) / viewportAspect;
+    projection._22 *= fovScale;
+    applyCameraPose(device, milliseconds);
 }
