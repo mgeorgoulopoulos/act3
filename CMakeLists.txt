@@ -212,6 +212,7 @@ foreach(asset IN LISTS space_titles)
 endforeach()
 
 configure_file(extra/textures/Pioneer.png assets/extra/textures/Pioneer.png COPYONLY)
+configure_file(extra/textures/lex.png assets/extra/textures/lex.png COPYONLY)
 foreach(face RANGE 0 5)
     configure_file("extra/textures/space-cube-${face}.png" "assets/extra/textures/space-cube-${face}.png" COPYONLY)
 endforeach()

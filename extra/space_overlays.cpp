@@ -11,11 +11,13 @@ extern TextureManager TexMan;
 #include <windows.h>
 #endif
 #include <GL/gl.h>
+namespace { unsigned definitionTime; }
 
 void extra::prepareSpaceOverlays(d3d9::Device& device, unsigned time)
 {
     if (!enabled)
         return;
+    definitionTime = time;
     if (time < 15000)
         device.Clear(0,nullptr,1,0xff000000,1,0);
     device.SetTexture(1,nullptr);
@@ -40,7 +42,7 @@ bool extra::drawSpaceDefinition(unsigned long color)
     const float width = std::min(1.f,(4.f/3.f)/aspect);
     const float height = std::min(1.f,aspect/(4.f/3.f));
     const float left = (1-width)/2, top = (1-height)/2;
-    glPushAttrib(GL_ENABLE_BIT | GL_TRANSFORM_BIT | GL_CURRENT_BIT);
+    glPushAttrib(GL_ENABLE_BIT | GL_TRANSFORM_BIT | GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glDisable(GL_LIGHTING);
@@ -51,13 +53,39 @@ bool extra::drawSpaceDefinition(unsigned long color)
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();
-    glColor4ub((color>>16)&255,(color>>8)&255,color&255,color>>24);
-    glBegin(GL_QUADS);
-    glTexCoord2f(0,0); glVertex2f(left,top);
-    glTexCoord2f(1,0); glVertex2f(left+width,top);
-    glTexCoord2f(1,1); glVertex2f(left+width,top+height);
-    glTexCoord2f(0,1); glVertex2f(left,top+height);
-    glEnd();
+    const auto quad = [&](float x, float y) {
+        glBegin(GL_QUADS);
+        glTexCoord2f(0,0); glVertex2f(left+x,top+y);
+        glTexCoord2f(1,0); glVertex2f(left+width+x,top+y);
+        glTexCoord2f(1,1); glVertex2f(left+width+x,top+height+y);
+        glTexCoord2f(0,1); glVertex2f(left+x,top+height+y);
+        glEnd();
+    };
+    const float fade = ((color>>24)&255)/255.f;
+    // Retain the opaque black page and the historical one-second dissolve.
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_TEXTURE_2D);
+    glColor4f(0,0,0,fade);
+    quad(0,0);
+    glEnable(GL_TEXTURE_2D);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE);
+    const float seconds = definitionTime/1000.f;
+    const float breath = 0.88f + 0.09f*std::sin(seconds*1.7f)
+        + 0.03f*std::sin(seconds*4.3f);
+    // Small additive copies of the HD mask make a soft red/orange backlight.
+    // Radius follows the fitted page, so it looks the same at every resolution.
+    for (int ring=1;ring<=3;++ring) {
+        const float radius = ring*0.0015f*(1+0.10f*std::sin(seconds*1.3f));
+        glColor4f(1,0.12f,0.015f,fade*breath*(0.16f/ring));
+        for (int sample=0;sample<12;++sample) {
+            const float angle = sample*6.2831853f/12;
+            quad(std::cos(angle)*radius*width*0.75f,std::sin(angle)*radius*height);
+        }
+    }
+    // The sharp gold core stays steady and readable while its halo breathes.
+    glColor4f(1,0.84f,0.08f,fade*(0.94f+0.06f*breath));
+    quad(0,0);
     glPopMatrix();
     glMatrixMode(GL_PROJECTION); glPopMatrix();
     glPopAttrib();
