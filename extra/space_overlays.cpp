@@ -69,12 +69,15 @@ bool extra::drawSpaceDefinition(unsigned long color)
         glEnd();
     };
     const float fade = ((color>>24)&255)/255.f;
-    // Retain the opaque black page and the historical one-second dissolve.
+    // Fade one full-viewport black page, including the widescreen margins.
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_TEXTURE_2D);
     glColor4f(0,0,0,fade);
-    quad(0,0);
+    glBegin(GL_QUADS);
+    glVertex2f(0,0); glVertex2f(1,0);
+    glVertex2f(1,1); glVertex2f(0,1);
+    glEnd();
     glEnable(GL_TEXTURE_2D);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE);
     const float seconds = definitionTime/1000.f;
