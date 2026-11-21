@@ -174,6 +174,7 @@ string(REPLACE [=[#include "SpaceScene.h"]=] [=[#include "space_scene.h"
 #include <cmath>
 using namespace d3d9;
 #include "extra/space_camera.h"
+#include "extra/space_stars.h"
 #include "extra/mode.h"
 static void SetTransition(bool) {}
 ]=] space_code "${space_code}")
@@ -187,8 +188,9 @@ endforeach()
 foreach(method RenderFire RenderReversed RenderPatras)
     string(REPLACE "void SpaceScene::${method}()\n{" "void SpaceScene::${method}()\n{\n    if (extra::enabled) return;" space_code "${space_code}")
 endforeach()
+string(REPLACE "Sympan.Render(m_pd3dDevice);" "if (!extra::drawSpaceStars(*m_pd3dDevice, Sympan)) Sympan.Render(m_pd3dDevice);" space_code "${space_code}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp" "${space_code}")
-target_sources(act3 PRIVATE extra/space_camera.cpp recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
+target_sources(act3 PRIVATE extra/space_stars.cpp extra/space_camera.cpp recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
 foreach(asset pioneer.s3d sympan.s3d man.s3d woman.s3d space.cam)
     configure_file("${ACT3_GEOMETRY_DIR}/${asset}" "assets/data/geometry/${asset}" COPYONLY)
 endforeach()
@@ -199,4 +201,9 @@ file(GLOB space_titles "${ACT3_GEOMETRY_DIR}/../textures/act3/*.png")
 foreach(asset IN LISTS space_titles)
     get_filename_component(name "${asset}" NAME)
     configure_file("${asset}" "assets/textures/act3/${name}" COPYONLY)
+endforeach()
+
+configure_file(extra/textures/Pioneer.png assets/extra/textures/Pioneer.png COPYONLY)
+foreach(face RANGE 0 5)
+    configure_file("extra/textures/space-cube-${face}.png" "assets/extra/textures/space-cube-${face}.png" COPYONLY)
 endforeach()

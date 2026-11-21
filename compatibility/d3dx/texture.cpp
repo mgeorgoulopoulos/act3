@@ -82,7 +82,7 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file
     if (path.compare(0, 14, "data/textures/") != 0)
         return D3DERR_INVALIDCALL;
     const auto name = path.substr(14);
-    path = extra::enabled && (name == "circuit.png" || name == "room_sna.png")
+    path = extra::enabled && (name == "circuit.png" || name == "room_sna.png" || name == "Pioneer.png")
         ? std::string(ACT3_ASSET_ROOT) + "/extra/textures/" + name
         : std::string(ACT3_TEXTURE_DIR) + '/' + name;
     std::vector<unsigned char> pixels;
@@ -182,6 +182,43 @@ d3d9::HRESULT D3DXCreateCubeTextureFromFile(d3d9::Device* device, const char* fi
     std::replace(path.begin(), path.end(), '\\', '/');
     if (path.compare(0, 14, "data/textures/") != 0)
         return D3DERR_INVALIDCALL;
+    if (extra::enabled && path.substr(14) == "sympan.dds") {
+        constexpr GLenum cubeMap = 0x8513, positiveX = 0x8515;
+        auto* texture = new (std::nothrow) BaseTexture{0, cubeMap};
+        if (!texture) return E_OUTOFMEMORY_RESULT;
+        GLint previous;
+        glGetIntegerv(0x8514, &previous);
+        glGenTextures(1, &texture->name);
+        glBindTexture(cubeMap, texture->name);
+#ifdef _WIN32
+        const auto com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+#endif
+        bool ready = texture->name != 0;
+        for (unsigned face = 0; face < 6 && ready; ++face) {
+            unsigned width, height;
+            std::vector<unsigned char> pixels;
+            ready = readImage(std::string(ACT3_ASSET_ROOT) + "/extra/textures/space-cube-" +
+                std::to_string(face) + ".png", width, height, pixels) && width == height;
+            if (ready)
+                glTexImage2D(positiveX + face, 0, GL_RGBA8, width, height, 0,
+                    GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        }
+#ifdef _WIN32
+        if (com >= 0) CoUninitialize();
+#endif
+        glTexParameteri(cubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(cubeMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(cubeMap, GL_TEXTURE_WRAP_S, 0x812f);
+        glTexParameteri(cubeMap, GL_TEXTURE_WRAP_T, 0x812f);
+        glTexParameteri(cubeMap, 0x8072, 0x812f);
+        glBindTexture(cubeMap, previous);
+        if (!ready || glGetError() != GL_NO_ERROR) {
+            texture->Release();
+            return D3DERR_INVALIDCALL;
+        }
+        *result = texture;
+        return D3D_OK;
+    }
     std::ifstream input(std::string(ACT3_TEXTURE_DIR) + '/' + path.substr(14),
         std::ios::binary);
     const std::vector<unsigned char> bytes(std::istreambuf_iterator<char>(input), {});
