@@ -75,15 +75,15 @@ Pose travel(Pose a, Pose b, float t, float clearance)
 
 unsigned extra::spaceCameraTime(unsigned sceneTime)
 {
-    if (sceneTime <= 20000) return 0;
-    if (sceneTime <= 26500) return sceneTime-20000;
-    if (sceneTime < 55500) return 6500+(sceneTime-26500)*49000/29000;
+    if (sceneTime <= 15000) return 0;
+    if (sceneTime <= 21500) return sceneTime-15000;
+    if (sceneTime < 55500) return 6500+(sceneTime-21500)*49000/34000;
     return sceneTime;
 }
 
 void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& projection)
 {
-    if (!enabled || time >= 61000)
+    if (!enabled)
         return;
     time = spaceCameraTime(time);
     Pose pose = shots[0].from;
@@ -138,10 +138,11 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
         const Vector3 eye{-recorded._41*rr.x-recorded._42*ru.x-recorded._43*rf.x,
             -recorded._41*rr.y-recorded._42*ru.y-recorded._43*rf.y,
             -recorded._41*rr.z-recorded._42*ru.z-recorded._43*rf.z};
-        const float t = smooth((time-55500)/5500.f);
+        const float t = smooth(std::clamp((time-55500)/5500.f,0.f,1.f));
         pose.eye = mix(pose.eye,eye,t);
-        forward = unit(mix(forward,rf,t));
-        right = unit(cross(unit(mix(up,ru,t)),forward));
+        // Keep the probe framed while retaining the recorded departure positions.
+        forward = unit({pose.target.x-pose.eye.x,pose.target.y-pose.eye.y,pose.target.z-pose.eye.z});
+        right = unit(cross({0,1,0},forward));
         up = cross(forward,right);
         pose.fov += (45-pose.fov)*t;
     }

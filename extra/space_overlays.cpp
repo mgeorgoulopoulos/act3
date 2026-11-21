@@ -16,7 +16,7 @@ void extra::prepareSpaceOverlays(d3d9::Device& device, unsigned time)
 {
     if (!enabled)
         return;
-    if (time < 20000)
+    if (time < 15000)
         device.Clear(0,nullptr,1,0xff000000,1,0);
     device.SetTexture(1,nullptr);
     device.SetRenderState(d3d9::D3DRS_LIGHTING,FALSE);
@@ -74,8 +74,7 @@ void extra::layoutSpaceQuote(MeshGrid& grid)
 bool extra::drawSpaceFire(d3d9::Device& device, d3d9::BaseTexture* texture, unsigned time)
 {
     if (!enabled) return false;
-    const float phase = std::clamp((float(time)-20000)/15000.f,0.f,1.f);
-    const float opacity = 1-phase*phase*(3-2*phase);
+
     device.SetTexture(1,nullptr);
     device.SetTexture(0,texture);
     glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
@@ -100,17 +99,15 @@ bool extra::drawSpaceFire(d3d9::Device& device, d3d9::BaseTexture* texture, unsi
         glTexCoord2f(0,1); glVertex2f(0,y+height);
         glEnd();
     };
-    // Keep the historical blue behind zero-alpha fire texels and fade the entire backing.
-    glDisable(GL_TEXTURE_2D);
-    glColor4f(0,0,128.f/255.f,opacity);
+    // Preserve the historical two-pass blending, including its blue zero-alpha texels.
+    glColor4f(1,1,1,1);
     quad(0,1);
-    glEnable(GL_TEXTURE_2D);
-    glColor4f(1,1,1,opacity);
+    glBlendFunc(GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA);
     quad(0,1);
     if (time < 33000) {
         TexMan.SetTexture(&device,0,"Noise.jpg");
         glBlendFunc(GL_SRC_ALPHA,GL_ONE);
-        glColor4f(0.53f,0.53f,0.53f,opacity);
+        glColor4f(0.53f,0.53f,0.53f,1);
         quad((std::sin(time/1000.f)+1)/2,0.10f);
         quad((std::sin(time/1100.f)+1)/2,0.05f);
         quad((std::sin(time/700.f)+1)/2,0.17f);
