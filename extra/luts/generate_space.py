@@ -6,14 +6,18 @@ import zlib
 
 def grade(r, g, b):
     luminance = 0.2126*r + 0.7152*g + 0.0722*b
-    # Modest film contrast, clean black and neutral stellar whites.
-    contrast = lambda x: x + 0.12*x*(1-x)*(2*x-1)
-    rgb = [contrast(c) for c in (r, g, b)]
+    # Richer film contrast and chroma; black and stellar white stay anchored.
+    contrast = lambda x: x + 0.28*x*(1-x)*(2*x-1)
+    saturation = 1.12
+    rgb = [contrast(max(0, min(1, luminance+(c-luminance)*saturation)))
+           for c in (r, g, b)]
     shadow = luminance * (1-luminance)**3
     warm = max(0, min(r, g)-b) * (1-luminance)
-    rgb[0] += -0.075*shadow + 0.075*warm
-    rgb[1] += 0.015*shadow + 0.018*warm
-    rgb[2] += 0.15*shadow - 0.045*warm
+    # Indigo shadows against amber metal evoke the original Cosmos palette.
+    highlight = luminance**2 * (1-luminance)
+    rgb[0] += -0.16*shadow + 0.22*warm + 0.055*highlight
+    rgb[1] += 0.005*shadow + 0.035*warm + 0.015*highlight
+    rgb[2] += 0.40*shadow - 0.14*warm - 0.025*highlight
     return bytes(round(255*max(0, min(1, c))) for c in rgb)
 
 
