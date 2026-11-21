@@ -1,6 +1,9 @@
 #include "space_overlays.h"
 #include "mode.h"
 #include "model.h"
+#include "TextureManager.h"
+#include <cmath>
+extern TextureManager TexMan;
 #include <algorithm>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -9,10 +12,12 @@
 #endif
 #include <GL/gl.h>
 
-void extra::prepareSpaceOverlays(d3d9::Device& device)
+void extra::prepareSpaceOverlays(d3d9::Device& device, unsigned time)
 {
     if (!enabled)
         return;
+    if (time < 20000)
+        device.Clear(0,nullptr,1,0xff000000,1,0);
     device.SetTexture(1,nullptr);
     device.SetRenderState(d3d9::D3DRS_LIGHTING,FALSE);
     device.SetRenderState(d3d9::D3DRS_ZENABLE,FALSE);
@@ -63,4 +68,55 @@ void extra::layoutSpaceQuote(MeshGrid& grid)
 {
     if (enabled)
         grid.SetTransform(TRANSFORM_SCALE,1,1.f/3.f,1);
+}
+
+
+bool extra::drawSpaceFire(d3d9::Device& device, d3d9::BaseTexture* texture, unsigned time)
+{
+    if (!enabled) return false;
+    const float phase = std::clamp((float(time)-20000)/15000.f,0.f,1.f);
+    const float opacity = 1-phase*phase*(3-2*phase);
+    device.SetTexture(1,nullptr);
+    device.SetTexture(0,texture);
+    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_TEXTURE_GEN_S);
+    glDisable(GL_TEXTURE_GEN_T);
+    glDisable(GL_TEXTURE_GEN_R);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix(); glLoadIdentity();
+    glOrtho(0,1,1,0,-1,1);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix(); glLoadIdentity();
+    const auto quad = [](float y, float height) {
+        glBegin(GL_QUADS);
+        glTexCoord2f(0,0); glVertex2f(0,y);
+        glTexCoord2f(1,0); glVertex2f(1,y);
+        glTexCoord2f(1,1); glVertex2f(1,y+height);
+        glTexCoord2f(0,1); glVertex2f(0,y+height);
+        glEnd();
+    };
+    // Fade the black backing with the fire, including texels whose own alpha is zero.
+    glDisable(GL_TEXTURE_2D);
+    glColor4f(0,0,0,opacity);
+    quad(0,1);
+    glEnable(GL_TEXTURE_2D);
+    glColor4f(1,1,1,opacity);
+    quad(0,1);
+    if (time < 33000) {
+        TexMan.SetTexture(&device,0,"Noise.jpg");
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE);
+        glColor4f(0.53f,0.53f,0.53f,opacity);
+        quad((std::sin(time/1000.f)+1)/2,0.10f);
+        quad((std::sin(time/1100.f)+1)/2,0.05f);
+        quad((std::sin(time/700.f)+1)/2,0.17f);
+    }
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION); glPopMatrix();
+    glPopAttrib();
+    return true;
 }

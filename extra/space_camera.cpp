@@ -73,10 +73,19 @@ Pose travel(Pose a, Pose b, float t, float clearance)
 }
 }
 
+unsigned extra::spaceCameraTime(unsigned sceneTime)
+{
+    if (sceneTime <= 20000) return 0;
+    if (sceneTime <= 26500) return sceneTime-20000;
+    if (sceneTime < 55500) return 6500+(sceneTime-26500)*49000/29000;
+    return sceneTime;
+}
+
 void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& projection)
 {
     if (!enabled || time >= 61000)
         return;
+    time = spaceCameraTime(time);
     Pose pose = shots[0].from;
     for (unsigned index=0; index<sizeof(shots)/sizeof(shots[0]); ++index) {
         const auto& shot = shots[index];

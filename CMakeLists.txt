@@ -190,11 +190,13 @@ endforeach()
 
 string(REPLACE "Sympan.Render(m_pd3dDevice);" "if (!extra::drawSpaceStars(*m_pd3dDevice, Sympan)) Sympan.Render(m_pd3dDevice);" space_code "${space_code}")
 string(REPLACE "Man.ClearTransform();" "extra::beginSpaceEngraving(m_dwTime);\n\tMan.ClearTransform();" space_code "${space_code}")
-string(REPLACE "Woman.Render(m_pd3dDevice);" "Woman.Render(m_pd3dDevice);\n\textra::endSpaceEngraving();\n\textra::prepareSpaceOverlays(*m_pd3dDevice);" space_code "${space_code}")
+string(REPLACE "Woman.Render(m_pd3dDevice);" "Woman.Render(m_pd3dDevice);\n\textra::endSpaceEngraving();\n\textra::prepareSpaceOverlays(*m_pd3dDevice, m_dwTime);" space_code "${space_code}")
 string(REPLACE "RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,lex_clr);"
     "if (!extra::drawSpaceDefinition(lex_clr)) RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,lex_clr);" space_code "${space_code}")
 string(REPLACE "m1.SetTransform(TRANSFORM_SCALE , 1 , 1 , 1);"
     "m1.SetTransform(TRANSFORM_SCALE , 1 , 1 , 1);\n\textra::layoutSpaceQuote(m1);" space_code "${space_code}")
+string(REPLACE "void SpaceScene::RenderFire()\n{"
+    "void SpaceScene::RenderFire()\n{\n    if (extra::drawSpaceFire(*m_pd3dDevice, p_empty_tex, m_dwTime)) return;" space_code "${space_code}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp" "${space_code}")
 target_sources(act3 PRIVATE extra/space_overlays.cpp extra/space_engraving.cpp extra/space_stars.cpp extra/space_camera.cpp recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
 foreach(asset pioneer.s3d sympan.s3d man.s3d woman.s3d space.cam)

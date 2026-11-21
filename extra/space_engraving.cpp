@@ -1,5 +1,6 @@
 #include "space_engraving.h"
 #include "mode.h"
+#include "space_camera.h"
 #include <cstdint>
 #include <cstdio>
 #ifdef _WIN32
@@ -107,7 +108,9 @@ void main() {
 }
 void extra::beginSpaceEngraving(unsigned time)
 {
-    if (!enabled || time >= 11000) return;
+    if (!enabled) return;
+    time = spaceCameraTime(time);
+    if (time >= 11000) return;
     if (!attempted) {
         attempted = true;
         if (!initialize()) {
