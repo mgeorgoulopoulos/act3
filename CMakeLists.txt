@@ -175,6 +175,7 @@ string(REPLACE [=[#include "SpaceScene.h"]=] [=[#include "space_scene.h"
 using namespace d3d9;
 #include "extra/space_camera.h"
 #include "extra/space_stars.h"
+#include "extra/space_engraving.h"
 #include "extra/mode.h"
 static void SetTransition(bool) {}
 ]=] space_code "${space_code}")
@@ -189,8 +190,10 @@ foreach(method RenderFire RenderReversed RenderPatras)
     string(REPLACE "void SpaceScene::${method}()\n{" "void SpaceScene::${method}()\n{\n    if (extra::enabled) return;" space_code "${space_code}")
 endforeach()
 string(REPLACE "Sympan.Render(m_pd3dDevice);" "if (!extra::drawSpaceStars(*m_pd3dDevice, Sympan)) Sympan.Render(m_pd3dDevice);" space_code "${space_code}")
+string(REPLACE "Man.ClearTransform();" "extra::beginSpaceEngraving(m_dwTime);\n\tMan.ClearTransform();" space_code "${space_code}")
+string(REPLACE "Woman.Render(m_pd3dDevice);" "Woman.Render(m_pd3dDevice);\n\textra::endSpaceEngraving();" space_code "${space_code}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp" "${space_code}")
-target_sources(act3 PRIVATE extra/space_stars.cpp extra/space_camera.cpp recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
+target_sources(act3 PRIVATE extra/space_engraving.cpp extra/space_stars.cpp extra/space_camera.cpp recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
 foreach(asset pioneer.s3d sympan.s3d man.s3d woman.s3d space.cam)
     configure_file("${ACT3_GEOMETRY_DIR}/${asset}" "assets/data/geometry/${asset}" COPYONLY)
 endforeach()

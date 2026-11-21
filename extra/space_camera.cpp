@@ -7,16 +7,30 @@
 namespace {
 using d3d9::Vector3;
 struct Pose { Vector3 eye, target; float fov, roll; };
-struct Key { unsigned time; Pose pose; };
-const Key keys[] = {
-    {0,     {{-15,30.2f,-392.5f}, {-15,30.2f,-381.5f}, 38, 0}},
-    {6500,  {{-0.2f,30.2f,-392.5f}, {-0.2f,30.2f,-381.5f}, 38, 0}},
-    {15000, {{7.0f,32.2f,-394}, {3.7f,31.9f,-390.5f}, 24, -3}},
-    {23000, {{4.5f,32.5f,-392.8f}, {3.5f,31.9f,-390.5f}, 32, 2}},
-    {30000, {{-7,36,-398}, {0,34,-389}, 38, -3}},
-    {40500, {{65,65,-505}, {0,45,-375}, 43, 0}},
-    {51000, {{125,75,-365}, {0,45,-375}, 43, 4}},
-    {55500, {{85,65,-560}, {0,45,-375}, 43, 0}},
+struct Shot { unsigned start, end; Pose from, to; };
+const Shot shots[] = {
+    {0,6500,
+        {{-15,30.2f,-392.5f},{-15,30.2f,-381.5f},38,0},
+        {{-0.2f,30.2f,-392.5f},{-0.2f,30.2f,-381.5f},38,0}},
+    // Cut from the engraving to a lateral portrait of the two raised figures.
+    {6500,13000,
+        {{6,32.3f,-394},{3.8f,31.8f,-390.5f},28,-3},
+        {{2.1f,32.6f,-394},{3.5f,31.8f,-390.5f},30,2}},
+    {13000,18500,
+        {{1.7f,32,-393.2f},{2.8f,31.6f,-390.2f},26,2},
+        {{2.3f,32.4f,-393},{3.2f,31.9f,-390.2f},29,-2}},
+    // Inspect the Geiger instrument from outside the front of the body.
+    {18500,26500,
+        {{42,29,-425},{20.4f,21,-388.4f},32,-4},
+        {{48,34,-420},{20.4f,21,-388.4f},35,2}},
+    // A separate pass around the thermoelectric generator on its boom.
+    {26500,34500,
+        {{-125,93,-347},{-87,75,-302},35,3},
+        {{-130,65,-340},{-87,75,-302},38,-3}},
+    // Dish and feed assembly from beyond their bounding volume.
+    {34500,42000,
+        {{100,145,-475},{0,69,-375},40,-4},
+        {{125,120,-460},{0,69,-375},44,0}},
 };
 Vector3 mix(Vector3 a, Vector3 b, float t)
 { return {a.x+(b.x-a.x)*t, a.y+(b.y-a.y)*t, a.z+(b.z-a.z)*t}; }
@@ -32,26 +46,22 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
 {
     if (!enabled || time >= 61000)
         return;
-    Pose pose = keys[0].pose;
-    for (unsigned i=1; i<sizeof(keys)/sizeof(keys[0]); ++i) {
-        const auto& from = keys[i-1];
-        const auto& to = keys[i];
-        const float t = smooth(std::clamp(float(time-from.time)/(to.time-from.time),0.f,1.f));
-        pose = {mix(from.pose.eye,to.pose.eye,t), mix(from.pose.target,to.pose.target,t),
-            from.pose.fov+(to.pose.fov-from.pose.fov)*t,
-            from.pose.roll+(to.pose.roll-from.pose.roll)*t};
-        if (time < to.time)
-            break;
+    Pose pose = shots[0].from;
+    for (const auto& shot : shots) {
+        if (time >= shot.end)
+            continue;
+        const float t = smooth(float(time-shot.start)/(shot.end-shot.start));
+        pose = {mix(shot.from.eye,shot.to.eye,t), mix(shot.from.target,shot.to.target,t),
+            shot.from.fov+(shot.to.fov-shot.from.fov)*t,
+            shot.from.roll+(shot.to.roll-shot.from.roll)*t};
+        break;
     }
-    if (time >= 40500) {
-        const float phase = std::min(1.f, (time-40500)/15000.f);
-        const float angle = -1.10714872f + 1.55f*phase;
-        const float radius = 145.34f + 12.f*phase;
-        pose.eye = {radius*std::cos(angle), 65+10*std::sin(phase*3.14159265f),
-            -375+radius*std::sin(angle)};
-        pose.target = {0,45,-375};
-        pose.fov = 43;
-        pose.roll = 3*std::sin(phase*3.14159265f);
+    if (time >= 42000) {
+        const float phase = std::min(1.f, (time-42000)/13500.f);
+        const float angle = -1.8f + 1.5f*phase;
+        constexpr float radius = 330.f;
+        pose = {{radius*std::cos(angle),100+25*std::sin(phase*3.14159265f),
+            -360+radius*std::sin(angle)}, {0,65,-360}, 48, 2*std::sin(phase*3.14159265f)};
     }
     auto forward = unit({pose.target.x-pose.eye.x,pose.target.y-pose.eye.y,pose.target.z-pose.eye.z});
     auto right = unit(cross({0,1,0},forward));
@@ -84,7 +94,7 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
     device.SetTransform(d3d9::D3DTS_VIEW,&view);
     // A shorter near plane permits the close inspection of the plaque figures.
     D3DXMatrixPerspectiveFovLH(&projection,pose.fov*0.01745329252f,4.f/3.f,0.05f,10000);
-    if (time < 11500) {
+    if (time < 6500) {
         // Parallel rays keep the plaque and raised figures scrolling as one flat image.
         d3d9::Matrix flat;
         constexpr float halfHeight = 7.4f;
@@ -92,7 +102,7 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
         flat._22 = 1.f / halfHeight;
         flat._33 = 1.f / 10000.f;
         flat._43 = -0.05f / 10000.f;
-        const float blend = smooth(std::clamp((float(time)-6500)/5000.f,0.f,1.f));
+        const float blend = 0;
         const Vector3 delta{pose.target.x-pose.eye.x,pose.target.y-pose.eye.y,pose.target.z-pose.eye.z};
         const float focusDistance = std::sqrt(dot(delta,delta));
         // Normalize the homogeneous scale at the subject before mixing projection types.

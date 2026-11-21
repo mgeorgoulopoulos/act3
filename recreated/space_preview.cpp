@@ -1,5 +1,6 @@
 #include "space_preview.h"
 #include "space_scene.h"
+#include "extra/space_engraving.h"
 #include <cstdlib>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -39,6 +40,7 @@ void preview::drawSpace(unsigned time)
 }
 void preview::releaseSpace()
 {
+    extra::releaseSpaceEngraving();
     scene.Man.Release();
     scene.Woman.Release();
     scene.Release();
