@@ -100,9 +100,9 @@ bool extra::drawSpaceFire(d3d9::Device& device, d3d9::BaseTexture* texture, unsi
         glTexCoord2f(0,1); glVertex2f(0,y+height);
         glEnd();
     };
-    // Fade the black backing with the fire, including texels whose own alpha is zero.
+    // Keep the historical blue behind zero-alpha fire texels and fade the entire backing.
     glDisable(GL_TEXTURE_2D);
-    glColor4f(0,0,0,opacity);
+    glColor4f(0,0,128.f/255.f,opacity);
     quad(0,1);
     glEnable(GL_TEXTURE_2D);
     glColor4f(1,1,1,opacity);
