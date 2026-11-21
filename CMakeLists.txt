@@ -173,11 +173,22 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/SpaceScene.cpp" space_code)
 string(REPLACE [=[#include "SpaceScene.h"]=] [=[#include "space_scene.h"
 #include <cmath>
 using namespace d3d9;
+#include "extra/space_camera.h"
+#include "extra/mode.h"
 static void SetTransition(bool) {}
 ]=] space_code "${space_code}")
 string(REPLACE "for (fuel=0;" "for (int fuel=0;" space_code "${space_code}")
+string(REPLACE "m_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );"
+    "extra::applySpaceCamera(*m_pd3dDevice, m_dwTime, matProj);\n\tm_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );" space_code "${space_code}")
+string(REPLACE "if (m_dwTime > FIRE_BEGIN)" "if (extra::enabled || m_dwTime > FIRE_BEGIN)" space_code "${space_code}")
+foreach(condition "m_dwTime < LEX_FADE" "m_dwTime > SAGAN_BEGIN && m_dwTime < SAGAN_FADE" "m_dwTime > TRANSITION_BEGIN")
+    string(REPLACE "if (${condition})" "if (!extra::enabled && (${condition}))" space_code "${space_code}")
+endforeach()
+foreach(method RenderFire RenderReversed RenderPatras)
+    string(REPLACE "void SpaceScene::${method}()\n{" "void SpaceScene::${method}()\n{\n    if (extra::enabled) return;" space_code "${space_code}")
+endforeach()
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp" "${space_code}")
-target_sources(act3 PRIVATE recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
+target_sources(act3 PRIVATE extra/space_camera.cpp recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
 foreach(asset pioneer.s3d sympan.s3d man.s3d woman.s3d space.cam)
     configure_file("${ACT3_GEOMETRY_DIR}/${asset}" "assets/data/geometry/${asset}" COPYONLY)
 endforeach()

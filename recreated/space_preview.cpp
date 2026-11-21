@@ -1,6 +1,11 @@
 #include "space_preview.h"
 #include "space_scene.h"
 #include <cstdlib>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+#include <GL/gl.h>
 
 extern TextureManager TexMan;
 namespace {
@@ -25,7 +30,12 @@ bool preview::loadSpace(d3d9::Device& device)
 void preview::drawSpace(unsigned time)
 {
     scene.m_dwTime = time;
+    if (extra::enabled) {
+        GLint viewport[4]; glGetIntegerv(GL_VIEWPORT,viewport);
+        scene.m_pd3dDevice->SetProjectionHorizontalScale(4.f*viewport[3]/(3.f*viewport[2]));
+    }
     scene.Render();
+    scene.m_pd3dDevice->SetProjectionHorizontalScale(1);
 }
 void preview::releaseSpace()
 {
