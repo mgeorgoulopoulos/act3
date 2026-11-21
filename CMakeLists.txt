@@ -116,6 +116,7 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.h" "${greetz_head
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/GreetzScene.cpp" greetz_source)
 string(REPLACE [=[#include "GreetzScene.h"]=] [=[#include "greetz_scene.h"
 #include "extra/greetz_layout.h"
+#include "extra/color_grade.h"
 #include <cmath>
 using namespace d3d9;
 using std::sin;]=] greetz_source "${greetz_source}")
@@ -127,6 +128,8 @@ string(REPLACE [=[if (!ma1.LoadFrom3DS("data\geometry\Eggplant.3ds" , "PlastiKPu
 string(REPLACE "Greetz/Deus.png" "Greetz/deus.png" greetz_source "${greetz_source}")
 string(REPLACE "Asd.SetTransform(TRANSFORM_TRANSLATE ,"
     "extra::positionGreet(*m_pd3dDevice, Asd," greetz_source "${greetz_source}")
+string(REPLACE "// Normalize normals" "extra::gradeGreetzBackground();\n\t// Normalize normals" greetz_source "${greetz_source}")
+string(REPLACE "pos.x = 150;" "extra::gradeGreetzSurface();\n\tpos.x = 150;" greetz_source "${greetz_source}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp" "${greetz_source}")
 target_sources(act3 PRIVATE marching.cpp 3ds.cpp recreated/blob_preview.cpp extra/greetz_layout.cpp
     compatibility/d3d9/render_target.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp")
@@ -157,3 +160,6 @@ configure_file(extra/luts/shadow.png assets/textures/shadow-grade.png COPYONLY)
 foreach(asset Asd.png TheLab.png deus.png Madwizards.png Conspiracy.png SenseAmok.png)
     configure_file("${ACT3_GEOMETRY_DIR}/../textures/Greetz/${asset}" "assets/textures/Greetz/${asset}" COPYONLY)
 endforeach()
+
+configure_file(extra/luts/greetz.png assets/textures/greetz-grade.png COPYONLY)
+configure_file(extra/luts/greetz-background.png assets/textures/greetz-background-grade.png COPYONLY)

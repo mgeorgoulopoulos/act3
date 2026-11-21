@@ -99,6 +99,17 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file
     if (!read)
         return D3DERR_INVALIDCALL;
 
+    if (extra::enabled && (name == "dna.png" || name.compare(0, 7, "Greetz/") == 0)) {
+        // Cyan-white cores and violet edges retain the historical additive silhouettes.
+        for (std::size_t i = 0; i < pixels.size(); i += 4) {
+            const float peak = (std::max)({pixels[i], pixels[i + 1], pixels[i + 2]}) / 255.f;
+            const float core = peak * peak;
+            pixels[i] = static_cast<unsigned char>(255 * (0.48f * peak + 0.52f * core));
+            pixels[i + 1] = static_cast<unsigned char>(255 * (0.78f * peak + 0.22f * core));
+            pixels[i + 2] = static_cast<unsigned char>(255 * peak);
+        }
+    }
+
     // Give the lens ghosts a cooler palette than the amber light source.
     if (extra::enabled && (name == "lens1.png" || name == "lens2.png" ||
                            name == "lens3.png" || name == "lens4.png")) {

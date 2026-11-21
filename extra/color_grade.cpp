@@ -41,6 +41,8 @@ struct Lookup {
     bool attempted{};
 };
 Lookup eggplants{"data/textures/eggplants-grade.png"};
+Lookup greetzBackground{"data/textures/greetz-background-grade.png"};
+Lookup greetz{"data/textures/greetz-grade.png"};
 Lookup shadow{"data/textures/shadow-grade.png"};
 int frameWidth, frameHeight;
 bool attempted;
@@ -189,7 +191,9 @@ void extra::applyColorGrade(int width, int height, SceneGrade scene, unsigned ti
     }
     if (!frame)
         return;
-    auto& lut = scene == SceneGrade::Shadow ? shadow : eggplants;
+    auto& lut = scene == SceneGrade::Shadow ? shadow :
+        scene == SceneGrade::GreetzBackground ? greetzBackground :
+        scene == SceneGrade::Greetz ? greetz : eggplants;
     if (!lut.attempted) {
         lut.attempted = true;
         d3d9::Device device;
@@ -227,6 +231,12 @@ void extra::applyColorGrade(int width, int height, SceneGrade scene, unsigned ti
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_GEN_S);
+    glDisable(GL_TEXTURE_GEN_T);
+    glDisable(GL_TEXTURE_GEN_R);
+    glMatrixMode(GL_TEXTURE);
+    glPushMatrix();
+    glLoadIdentity();
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -246,6 +256,8 @@ void extra::applyColorGrade(int width, int height, SceneGrade scene, unsigned ti
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
+    glMatrixMode(GL_TEXTURE);
+    glPopMatrix();
     glPopAttrib();
 }
 
@@ -256,7 +268,7 @@ void extra::releaseColorGrade()
             destroy(program);
     if (frame)
         glDeleteTextures(1, &frame);
-    for (auto* lut : {&eggplants, &shadow}) {
+    for (auto* lut : {&eggplants, &shadow, &greetzBackground, &greetz}) {
         if (lut->texture)
             lut->texture->Release();
         lut->texture = nullptr;
@@ -268,4 +280,18 @@ void extra::releaseColorGrade()
     program = frame = 0;
     attempted = false;
     frameWidth = frameHeight = 0;
+}
+
+void extra::gradeGreetzBackground()
+{
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    applyColorGrade(viewport[2], viewport[3], SceneGrade::GreetzBackground);
+}
+
+void extra::gradeGreetzSurface()
+{
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    applyColorGrade(viewport[2], viewport[3], SceneGrade::Greetz);
 }
