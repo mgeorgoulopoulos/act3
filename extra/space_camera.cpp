@@ -87,7 +87,20 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
         pose = {mix(shot.from.eye,shot.to.eye,t), mix(shot.from.target,shot.to.target,t),
             shot.from.fov+(shot.to.fov-shot.from.fov)*t,
             shot.from.roll+(shot.to.roll-shot.from.roll)*t};
-        if (index >= 3 && time < shot.start+2200)
+        if (index == 3 && time < shot.start+3200) {
+            // Descend outside the front face, then round the lower/right edge of the dish.
+            const float t = smooth((time-shot.start)/3200.f);
+            const float u = 1-t;
+            const auto from = shots[index-1].to;
+            const Vector3 first{from.eye.x,10,-394};
+            const Vector3 second{65,10,-425};
+            const auto destination = pose;
+            pose = travel(from,destination,t,0);
+            pose.eye = {
+                u*u*u*from.eye.x+3*u*u*t*first.x+3*u*t*t*second.x+t*t*t*destination.eye.x,
+                u*u*u*from.eye.y+3*u*u*t*first.y+3*u*t*t*second.y+t*t*t*destination.eye.y,
+                u*u*u*from.eye.z+3*u*u*t*first.z+3*u*t*t*second.z+t*t*t*destination.eye.z};
+        } else if (index >= 4 && time < shot.start+2200)
             pose = travel(shots[index-1].to,pose,smooth((time-shot.start)/2200.f),65.f);
         break;
     }

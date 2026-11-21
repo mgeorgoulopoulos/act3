@@ -56,7 +56,7 @@ void initialize(Scene3DS& scene)
             const d3d9::Vector3 p{center.x+radius.x*ring*std::cos(angle),
                 center.y+radius.y*y,center.z+radius.z*ring*std::sin(angle)};
             const float intensity = random(seed);
-            shell.stars.push_back({p,0.10f+0.72f*intensity*intensity*intensity,random(seed)});
+            shell.stars.push_back({p,0.34f+0.66f*intensity*intensity,random(seed)});
         }
         shells.push_back(std::move(shell));
     }
@@ -89,8 +89,10 @@ bool extra::drawSpaceStars(d3d9::Device& device, Scene3DS& scene)
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix(); glLoadMatrixf(&modelView.m[0][0]);
     GLint viewport[4]; glGetIntegerv(GL_VIEWPORT,viewport);
-    glPointSize(1.f + 0.5f*viewport[3]/1080.f);
-    for (const auto& shell : shells) {
+    for (unsigned layer=0; layer<shells.size(); ++layer) {
+        const auto& shell = shells[layer];
+        // Different apparent sizes keep the two moving layers readable as a starfield.
+        glPointSize((layer == 0 ? 3.2f : 2.1f)*viewport[3]/1080.f);
         glBegin(GL_POINTS);
         for (const auto& star : shell.stars) {
             const float warm = star.warmth > 0.92f ? 1.f : 0.f;
