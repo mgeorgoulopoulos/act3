@@ -49,3 +49,5 @@ void WriteToLog(const char* message)
     fputs(message, stderr);
     fputc('\n', stderr);
 }
+
+@space_grid_effects@

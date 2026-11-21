@@ -58,9 +58,26 @@ d3d9::HRESULT d3d9::Device::CreateTexture(unsigned width, unsigned height, unsig
     if (!result)
         return D3DERR_INVALIDCALL;
     *result = nullptr;
-    if (!width || !height || levels != 1 || usage != D3DUSAGE_RENDERTARGET ||
-        format != D3DFMT_A8R8G8B8 || pool != D3DPOOL_DEFAULT || sharedHandle)
+    if (!width || !height || levels != 1 || (usage != D3DUSAGE_RENDERTARGET && usage != 0) ||
+        format != D3DFMT_A8R8G8B8 || (pool != D3DPOOL_DEFAULT && pool != D3DPOOL_MANAGED) || sharedHandle)
         return D3DERR_INVALIDCALL;
+    if (!usage && pool == D3DPOOL_MANAGED) {
+        auto* texture = new (std::nothrow) BaseTexture{};
+        if (!texture) return E_OUTOFMEMORY_RESULT;
+        texture->target = GL_TEXTURE_2D;
+        texture->width = width;
+        texture->height = height;
+        texture->pixels.resize(width * height);
+        glPushAttrib(GL_TEXTURE_BIT);
+        glGenTextures(1, &texture->name);
+        glBindTexture(GL_TEXTURE_2D, texture->name);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, 0x80e1, GL_UNSIGNED_BYTE, texture->pixels.data());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glPopAttrib();
+        *result = texture;
+        return D3D_OK;
+    }
     auto gen = entry<void (APIENTRY*)(GLsizei, GLuint*)>("glGenFramebuffers");
     auto bind = entry<void (APIENTRY*)(GLenum, GLuint)>("glBindFramebuffer");
     auto attach = entry<void (APIENTRY*)(GLenum, GLenum, GLenum, GLuint, GLint)>("glFramebufferTexture2D");
@@ -120,5 +137,24 @@ d3d9::HRESULT d3d9::Device::EndRenderTarget()
     bind(framebuffer, previousFramebuffer);
     glViewport(previousViewport[0], previousViewport[1], previousViewport[2], previousViewport[3]);
     renderTargetActive = false;
+    return D3D_OK;
+}
+
+d3d9::HRESULT d3d9::BaseTexture::LockRect(unsigned level, LockedRect* out, const void* rect, unsigned flags)
+{
+    if (!out || level || rect || flags || locked || pixels.empty()) return D3DERR_INVALIDCALL;
+    locked = true;
+    out->Pitch = width * 4;
+    out->pBits = pixels.data();
+    return D3D_OK;
+}
+d3d9::HRESULT d3d9::BaseTexture::UnlockRect(unsigned level)
+{
+    if (level || !locked) return D3DERR_INVALIDCALL;
+    glPushAttrib(GL_TEXTURE_BIT);
+    glBindTexture(GL_TEXTURE_2D, name);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, 0x80e1, GL_UNSIGNED_BYTE, pixels.data());
+    glPopAttrib();
+    locked = false;
     return D3D_OK;
 }

@@ -1,5 +1,6 @@
 #include "mesh_preview.h"
 #include "blob_preview.h"
+#include "space_preview.h"
 #include "shadow_preview.h"
 #include "shadow_blur.h"
 #include "../extra/shadow_focus.h"
@@ -28,6 +29,7 @@ d3d9::Device device;
 DemoEngine host;
 Scene1 scene{};
 std::chrono::steady_clock::time_point playbackStart;
+bool spaceSelected = false;
 bool blobSelected = false;
 constexpr unsigned blobDuration = 19300;
 constexpr unsigned shadowDuration = 56000;
@@ -40,7 +42,10 @@ void preview::selectOption(std::string_view argument)
 {
     if (argument == "--extra")
         extra::enabled = true;
-    else if (argument == "--blob") {
+    else if (argument == "--space") {
+        spaceSelected = true;
+        blobSelected = shadowSelected = sequenceSelected = false;
+    } else if (argument == "--blob") {
         blobSelected = true;
         shadowSelected = sequenceSelected = false;
     } else if (argument == "--shadow") {
@@ -56,6 +61,7 @@ void preview::selectOption(std::string_view argument)
 
 const char* preview::windowTitle()
 {
+    if (spaceSelected) return "ACT3 | Space";
     if (blobSelected)
         return "ACT3 | Blob";
     if (sequenceSelected)
@@ -75,6 +81,12 @@ bool preview::load()
     fs::current_path(ACT3_ASSET_ROOT, error);
     if (error)
         return false;
+    if (spaceSelected) {
+        const bool loaded = loadSpace(device);
+        fs::current_path(previous, error);
+        playbackStart = std::chrono::steady_clock::now();
+        return loaded && !error;
+    }
     if (blobSelected) {
         const bool loaded = loadBlob(device);
         fs::current_path(previous, error);
@@ -112,6 +124,10 @@ void preview::draw(int width, int height)
     glColor3f(1, 1, 1);
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - playbackStart).count();
+    if (spaceSelected) {
+        drawSpace(static_cast<unsigned>(elapsed % 70000));
+        return;
+    }
     if (blobSelected) {
         drawBlob(device, width, height, static_cast<unsigned>(elapsed % blobDuration));
         return;
@@ -142,6 +158,10 @@ void preview::draw(int width, int height)
 
 void preview::releaseTextures()
 {
+    if (spaceSelected) {
+        releaseSpace();
+        return;
+    }
     if (blobSelected) {
         releaseBlob();
         return;

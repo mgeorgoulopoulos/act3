@@ -4,6 +4,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#ifndef _WIN32
+#include <GL/glx.h>
+#define APIENTRY
+#endif
 #include <GL/gl.h>
 #include <limits>
 #include <cstring>
@@ -12,6 +16,23 @@
 
 namespace d3d9 {
 namespace {
+class TextureUnit {
+public:
+    explicit TextureUnit(unsigned stage)
+    {
+        using Activate = void (APIENTRY*)(GLenum);
+#ifdef _WIN32
+        activate = reinterpret_cast<Activate>(wglGetProcAddress("glActiveTexture"));
+#else
+        activate = reinterpret_cast<Activate>(glXGetProcAddressARB(
+            reinterpret_cast<const GLubyte*>("glActiveTexture")));
+#endif
+        if (activate) activate(0x84c0 + stage);
+    }
+    ~TextureUnit() { if (activate) activate(0x84c0); }
+private:
+    void (APIENTRY* activate)(GLenum){};
+};
 constexpr unsigned modelFormat = D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1;
 }
 
@@ -101,8 +122,9 @@ HRESULT Device::SetMaterial(const Material* material)
 
 HRESULT Device::SetTexture(unsigned stage, BaseTexture* texture)
 {
-    if (stage != 0)
+    if (stage > 1)
         return stage < 4 && !texture ? D3D_OK : D3DERR_INVALIDCALL;
+    TextureUnit unit(stage);
     constexpr GLenum cubeMap = 0x8513;
     glDisable(GL_TEXTURE_2D);
     glDisable(cubeMap);
@@ -124,6 +146,24 @@ HRESULT Device::SetTexture(unsigned stage, BaseTexture* texture)
 
 HRESULT Device::SetTextureStageState(unsigned stage, TextureStageState state, unsigned value)
 {
+    if (stage > 1) return D3DERR_INVALIDCALL;
+    TextureUnit unit(stage);
+    if (stage == 1 && state == D3DTSS_COLOROP && value == 11) {
+        // D3DTOP_ADDSMOOTH = previous + texture * (1 - previous).
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, 0x8570);
+        glTexEnvi(GL_TEXTURE_ENV, 0x8571, 0x8575);
+        glTexEnvi(GL_TEXTURE_ENV, 0x8580, 0x8576);
+        glTexEnvi(GL_TEXTURE_ENV, 0x8581, 0x8578);
+        glTexEnvi(GL_TEXTURE_ENV, 0x8582, GL_TEXTURE);
+        glTexEnvi(GL_TEXTURE_ENV, 0x8590, GL_SRC_COLOR);
+        glTexEnvi(GL_TEXTURE_ENV, 0x8591, GL_SRC_COLOR);
+        glTexEnvi(GL_TEXTURE_ENV, 0x8592, GL_SRC_COLOR);
+        const GLfloat white[] = {1, 1, 1, 1};
+        glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, white);
+        return D3D_OK;
+    }
+    if (stage == 0 && (state == D3DTSS_ALPHAOP || state == D3DTSS_ALPHAARG1 || state == D3DTSS_ALPHAARG2))
+        return D3D_OK;
     if (stage == 0 && state == D3DTSS_COLOROP && value == D3DTOP_MODULATE) {
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
         return D3D_OK;
@@ -132,7 +172,7 @@ HRESULT Device::SetTextureStageState(unsigned stage, TextureStageState state, un
                       (state == D3DTSS_COLORARG2 && value == D3DTA_TEXTURE)))
         return D3D_OK;
     const auto generation = value & 0xffff0000u;
-    if (stage != 0 || state != D3DTSS_TEXCOORDINDEX ||
+    if (state != D3DTSS_TEXCOORDINDEX ||
         (value & 0xffffu) > 1 ||
         (generation != D3DTSS_TCI_CAMERASPACEREFLECTIONVECTOR &&
          value != D3DTSS_TCI_PASSTHRU))
@@ -204,12 +244,13 @@ HRESULT Device::SetRenderState(RenderState state, unsigned value)
         break;
     case D3DRS_SRCBLEND:
     case D3DRS_DESTBLEND:
-        if (value != D3DBLEND_ZERO && value != D3DBLEND_ONE &&
+        if (value != 5 && value != 6 && value != D3DBLEND_ZERO && value != D3DBLEND_ONE &&
             !(state == D3DRS_SRCBLEND && value == D3DBLEND_SRCCOLOR) &&
             !(state == D3DRS_DESTBLEND && (value == D3DBLEND_INVDESTCOLOR || value == D3DBLEND_INVSRCCOLOR)))
             return D3DERR_INVALIDCALL;
         (state == D3DRS_SRCBLEND ? sourceBlend : destinationBlend) = value;
-        glBlendFunc(sourceBlend == D3DBLEND_SRCCOLOR ? GL_SRC_COLOR : sourceBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO,
+        glBlendFunc(sourceBlend == 5 ? GL_SRC_ALPHA : sourceBlend == 6 ? GL_ONE_MINUS_SRC_ALPHA : sourceBlend == D3DBLEND_SRCCOLOR ? GL_SRC_COLOR : sourceBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO,
+            destinationBlend == 5 ? GL_SRC_ALPHA : destinationBlend == 6 ? GL_ONE_MINUS_SRC_ALPHA :
             destinationBlend == D3DBLEND_INVDESTCOLOR ? GL_ONE_MINUS_DST_COLOR :
                 destinationBlend == D3DBLEND_INVSRCCOLOR ? GL_ONE_MINUS_SRC_COLOR :
                 destinationBlend == D3DBLEND_ONE ? GL_ONE : GL_ZERO);

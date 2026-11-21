@@ -14,6 +14,8 @@ class Scene {
 public:
     IDirect3DDevice9* m_pd3dDevice = nullptr;
     DemoEngine* m_pHostDemo = nullptr;
+    Scene* m_pNextScene = nullptr;
+    bool m_bFinished = false;
     DWORD m_dwTime = 0, m_dwDuration = 0;
     virtual ~Scene() = default;
     virtual bool Init() = 0;

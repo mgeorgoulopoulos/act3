@@ -74,3 +74,9 @@ inline void D3DXMatrixRotationY(D3DXMATRIXA16* m, float angle)
 { D3DXMatrixRotationYawPitchRoll(m, angle, 0, 0); }
 void D3DXMatrixLookAtLH(D3DXMATRIXA16*, const D3DXVECTOR3* eye,
     const D3DXVECTOR3* target, const D3DXVECTOR3* up);
+
+using PDIRECT3DTEXTURE9 = d3d9::BaseTexture*;
+using D3DLOCKED_RECT = d3d9::LockedRect;
+using d3d9::D3DPOOL_MANAGED;
+constexpr unsigned D3DTOP_ADDSMOOTH = 11;
+constexpr unsigned D3DBLEND_SRCALPHA = 5, D3DBLEND_INVSRCALPHA = 6;

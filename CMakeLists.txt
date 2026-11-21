@@ -76,6 +76,7 @@ extract_model_method(greetz_grid "int MeshGrid::CreateBuffers(" "int MeshGrid::V
 extract_model_method(greetz_scroll "void MeshGrid::Scroll(" "int Material::LoadFrom3DS(")
 extract_model_method(blob_room "int	MeshInCube::Create(" "// ***************************
 //	MaterialManager")
+extract_model_method(space_grid_effects "int MeshGrid::VortexRectangle(" "int MeshGrid::Graviball(")
 configure_file(recreated/model_renderer.cpp.in generated/model_renderer.cpp @ONLY)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ParticleScene.cpp ParticleScene.h)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ParticleScene.h" shadow_header)
@@ -163,3 +164,28 @@ endforeach()
 
 configure_file(extra/luts/greetz.png assets/textures/greetz-grade.png COPYONLY)
 configure_file(extra/luts/greetz-background.png assets/textures/greetz-background-grade.png COPYONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS SpaceScene.cpp SpaceScene.h)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/SpaceScene.h" space_header)
+string(REPLACE [=[#include "DemoEngine.h"]=] [=[#include "recreated/scene_host.h"
+#include "camera.h"]=] space_header "${space_header}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.h" "${space_header}")
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/SpaceScene.cpp" space_code)
+string(REPLACE [=[#include "SpaceScene.h"]=] [=[#include "space_scene.h"
+#include <cmath>
+using namespace d3d9;
+static void SetTransition(bool) {}
+]=] space_code "${space_code}")
+string(REPLACE "for (fuel=0;" "for (int fuel=0;" space_code "${space_code}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp" "${space_code}")
+target_sources(act3 PRIVATE recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
+foreach(asset pioneer.s3d sympan.s3d man.s3d woman.s3d space.cam)
+    configure_file("${ACT3_GEOMETRY_DIR}/${asset}" "assets/data/geometry/${asset}" COPYONLY)
+endforeach()
+foreach(asset sympan.dds Sagan.png Noise.jpg lex.png Pioneer.png Sympan_3.png Sympan_4.png)
+    configure_file("${ACT3_GEOMETRY_DIR}/../textures/${asset}" "assets/textures/${asset}" COPYONLY)
+endforeach()
+file(GLOB space_titles "${ACT3_GEOMETRY_DIR}/../textures/act3/*.png")
+foreach(asset IN LISTS space_titles)
+    get_filename_component(name "${asset}" NAME)
+    configure_file("${asset}" "assets/textures/act3/${name}" COPYONLY)
+endforeach()

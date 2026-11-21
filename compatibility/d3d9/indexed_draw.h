@@ -19,10 +19,15 @@ struct Material {
     Color Diffuse, Ambient, Specular, Emissive;
     float Power;
 };
+struct LockedRect { int Pitch; void* pBits; };
 struct BaseTexture {
     unsigned name;
     unsigned target;
     unsigned framebuffer{}, depth{}, width{}, height{};
+    std::vector<std::uint32_t> pixels;
+    bool locked{};
+    std::int32_t LockRect(unsigned level, LockedRect*, const void*, unsigned flags);
+    std::int32_t UnlockRect(unsigned level);
     void Release();
 };
 using HRESULT = std::int32_t;
@@ -36,10 +41,10 @@ constexpr unsigned D3DFVF_TEX1 = 0x100;
 constexpr unsigned D3DUSAGE_RENDERTARGET = 1;
 constexpr unsigned D3DUSAGE_WRITEONLY = 0x008;
 enum PrimitiveType { D3DPT_TRIANGLELIST = 4 };
-enum Pool { D3DPOOL_DEFAULT = 0, D3DPOOL_SYSTEMMEM = 2 };
+enum Pool { D3DPOOL_DEFAULT = 0, D3DPOOL_MANAGED = 1, D3DPOOL_SYSTEMMEM = 2 };
 enum Format { D3DFMT_A8R8G8B8 = 21, D3DFMT_INDEX16 = 101, D3DFMT_DXT1 = 0x31545844 };
 enum TransformState { D3DTS_VIEW = 2, D3DTS_PROJECTION = 3, D3DTS_WORLD = 256 };
-enum TextureStageState { D3DTSS_COLOROP = 1, D3DTSS_COLORARG1 = 2, D3DTSS_COLORARG2 = 3, D3DTSS_TEXCOORDINDEX = 11 };
+enum TextureStageState { D3DTSS_ALPHAOP = 4, D3DTSS_ALPHAARG1 = 5, D3DTSS_ALPHAARG2 = 6, D3DTSS_COLOROP = 1, D3DTSS_COLORARG1 = 2, D3DTSS_COLORARG2 = 3, D3DTSS_TEXCOORDINDEX = 11 };
 enum RenderState {
     D3DRS_FILLMODE = 8, D3DRS_ALPHATESTENABLE = 15, D3DRS_NORMALIZENORMALS = 143,
     D3DRS_ZENABLE = 7, D3DRS_ZWRITEENABLE = 14, D3DRS_SRCBLEND = 19,
