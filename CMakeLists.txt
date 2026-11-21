@@ -176,6 +176,7 @@ using namespace d3d9;
 #include "extra/space_camera.h"
 #include "extra/space_stars.h"
 #include "extra/space_engraving.h"
+#include "extra/space_overlays.h"
 #include "extra/mode.h"
 static void SetTransition(bool) {}
 ]=] space_code "${space_code}")
@@ -183,17 +184,19 @@ string(REPLACE "for (fuel=0;" "for (int fuel=0;" space_code "${space_code}")
 string(REPLACE "m_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );"
     "extra::applySpaceCamera(*m_pd3dDevice, m_dwTime, matProj);\n\tm_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );" space_code "${space_code}")
 string(REPLACE "if (m_dwTime > FIRE_BEGIN)" "if (extra::enabled || m_dwTime > FIRE_BEGIN)" space_code "${space_code}")
-foreach(condition "m_dwTime < LEX_FADE" "m_dwTime > SAGAN_BEGIN && m_dwTime < SAGAN_FADE" "m_dwTime > TRANSITION_BEGIN")
+foreach(condition "m_dwTime > TRANSITION_BEGIN")
     string(REPLACE "if (${condition})" "if (!extra::enabled && (${condition}))" space_code "${space_code}")
 endforeach()
-foreach(method RenderFire RenderReversed RenderPatras)
-    string(REPLACE "void SpaceScene::${method}()\n{" "void SpaceScene::${method}()\n{\n    if (extra::enabled) return;" space_code "${space_code}")
-endforeach()
+
 string(REPLACE "Sympan.Render(m_pd3dDevice);" "if (!extra::drawSpaceStars(*m_pd3dDevice, Sympan)) Sympan.Render(m_pd3dDevice);" space_code "${space_code}")
 string(REPLACE "Man.ClearTransform();" "extra::beginSpaceEngraving(m_dwTime);\n\tMan.ClearTransform();" space_code "${space_code}")
-string(REPLACE "Woman.Render(m_pd3dDevice);" "Woman.Render(m_pd3dDevice);\n\textra::endSpaceEngraving();" space_code "${space_code}")
+string(REPLACE "Woman.Render(m_pd3dDevice);" "Woman.Render(m_pd3dDevice);\n\textra::endSpaceEngraving();\n\textra::prepareSpaceOverlays(*m_pd3dDevice);" space_code "${space_code}")
+string(REPLACE "RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,lex_clr);"
+    "if (!extra::drawSpaceDefinition(lex_clr)) RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,lex_clr);" space_code "${space_code}")
+string(REPLACE "m1.SetTransform(TRANSFORM_SCALE , 1 , 1 , 1);"
+    "m1.SetTransform(TRANSFORM_SCALE , 1 , 1 , 1);\n\textra::layoutSpaceQuote(m1);" space_code "${space_code}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp" "${space_code}")
-target_sources(act3 PRIVATE extra/space_engraving.cpp extra/space_stars.cpp extra/space_camera.cpp recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
+target_sources(act3 PRIVATE extra/space_overlays.cpp extra/space_engraving.cpp extra/space_stars.cpp extra/space_camera.cpp recreated/space_preview.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.cpp")
 foreach(asset pioneer.s3d sympan.s3d man.s3d woman.s3d space.cam)
     configure_file("${ACT3_GEOMETRY_DIR}/${asset}" "assets/data/geometry/${asset}" COPYONLY)
 endforeach()
