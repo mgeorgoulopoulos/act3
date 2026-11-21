@@ -1,5 +1,6 @@
 #include "space_overlays.h"
 #include "mode.h"
+#include "color_grade.h"
 #include "model.h"
 #include "TextureManager.h"
 #include <cmath>
@@ -18,6 +19,12 @@ void extra::prepareSpaceOverlays(d3d9::Device& device, unsigned time)
     if (!enabled)
         return;
     definitionTime = time;
+    // Grade the rendered universe before the artist's introductory overlays.
+    if (time >= 15000) {
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT,viewport);
+        applyColorGrade(viewport[2],viewport[3],SceneGrade::Space);
+    }
     if (time < 15000)
         device.Clear(0,nullptr,1,0xff000000,1,0);
     device.SetTexture(1,nullptr);

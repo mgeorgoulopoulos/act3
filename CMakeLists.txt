@@ -157,6 +157,7 @@ endforeach()
 configure_file(extra/luts/eggplants.png assets/textures/eggplants-grade.png COPYONLY)
 configure_file(extra/textures/shadow-core.png assets/textures/shadow-core.png COPYONLY)
 configure_file(extra/luts/shadow.png assets/textures/shadow-grade.png COPYONLY)
+configure_file(extra/luts/space.png assets/textures/space-grade.png COPYONLY)
 
 foreach(asset Asd.png TheLab.png deus.png Madwizards.png Conspiracy.png SenseAmok.png)
     configure_file("${ACT3_GEOMETRY_DIR}/../textures/Greetz/${asset}" "assets/textures/Greetz/${asset}" COPYONLY)
