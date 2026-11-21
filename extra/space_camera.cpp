@@ -3,6 +3,12 @@
 #include "../compatibility/d3dx/d3dx9.h"
 #include <algorithm>
 #include <cmath>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+#include <GL/gl.h>
 
 namespace {
 using d3d9::Vector3;
@@ -85,6 +91,19 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
 {
     if (!enabled)
         return;
+    // The recorded opening tells the plaque's story at its original pace.
+    // Keep its view and lens intact through the first turn into the figures.
+    const unsigned sceneTime = time;
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT,viewport);
+    const float aspect = float(viewport[2])/viewport[3];
+    const float openingFov = 2.f*std::atan(std::tan(0.7853981634f/2)
+        *std::min(1.f,(4.f/3.f)/aspect))*57.2957795f;
+    if (sceneTime <= 22338) {
+        // Preserve the original horizontal field rather than expose extra frame at the sides.
+        D3DXMatrixPerspectiveFovLH(&projection,openingFov*0.01745329252f,4.f/3.f,1,10000);
+        return;
+    }
     time = spaceCameraTime(time);
     Pose pose = shots[0].from;
     for (unsigned index=0; index<sizeof(shots)/sizeof(shots[0]); ++index) {
@@ -122,6 +141,21 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
     }
     if (time >= 42000 && time < 44500)
         pose = travel(shots[5].to,pose,smooth((time-42000)/2500.f),50.f);
+    if (sceneTime < 24838) {
+        d3d9::Matrix recorded;
+        device.GetTransform(d3d9::D3DTS_VIEW,&recorded);
+        const Vector3 rr{recorded._11,recorded._21,recorded._31};
+        const Vector3 ru{recorded._12,recorded._22,recorded._32};
+        const Vector3 rf{recorded._13,recorded._23,recorded._33};
+        const Vector3 eye{-recorded._41*rr.x-recorded._42*ru.x-recorded._43*rf.x,
+            -recorded._41*rr.y-recorded._42*ru.y-recorded._43*rf.y,
+            -recorded._41*rr.z-recorded._42*ru.z-recorded._43*rf.z};
+        const float distance = std::sqrt(dot(Vector3{pose.target.x-pose.eye.x,
+            pose.target.y-pose.eye.y,pose.target.z-pose.eye.z},
+            Vector3{pose.target.x-pose.eye.x,pose.target.y-pose.eye.y,pose.target.z-pose.eye.z}));
+        const float t = smooth((sceneTime-22338)/2500.f);
+        pose = travel({eye,{eye.x+rf.x*distance,eye.y+rf.y*distance,eye.z+rf.z*distance},openingFov,0},pose,t,0);
+    }
     auto forward = unit({pose.target.x-pose.eye.x,pose.target.y-pose.eye.y,pose.target.z-pose.eye.z});
     auto right = unit(cross({0,1,0},forward));
     auto up = cross(forward,right);
@@ -154,21 +188,4 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
     device.SetTransform(d3d9::D3DTS_VIEW,&view);
     // A shorter near plane permits the close inspection of the plaque figures.
     D3DXMatrixPerspectiveFovLH(&projection,pose.fov*0.01745329252f,4.f/3.f,0.05f,10000);
-    if (time < 11000) {
-        // Parallel rays keep the plaque and raised figures scrolling as one flat image.
-        d3d9::Matrix flat;
-        constexpr float halfHeight = 7.4f;
-        flat._11 = 1.f / (halfHeight * 4.f / 3.f);
-        flat._22 = 1.f / halfHeight;
-        flat._33 = 1.f / 10000.f;
-        flat._43 = -0.05f / 10000.f;
-        const float blend = smooth(std::clamp((float(time)-6500)/4500.f,0.f,1.f));
-        const Vector3 delta{pose.target.x-pose.eye.x,pose.target.y-pose.eye.y,pose.target.z-pose.eye.z};
-        const float focusDistance = std::sqrt(dot(delta,delta));
-        // Normalize the homogeneous scale at the subject before mixing projection types.
-        for (int row=0; row<4; ++row)
-            for (int column=0; column<4; ++column)
-                projection.m[row][column] = flat.m[row][column] * (1-blend)
-                    + projection.m[row][column] * blend / focusDistance;
-    }
 }

@@ -109,6 +109,7 @@ void main() {
 void extra::beginSpaceEngraving(unsigned time)
 {
     if (!enabled) return;
+    const unsigned sceneTime = time;
     time = spaceCameraTime(time);
     if (time >= 11000) return;
     if (!attempted) {
@@ -124,7 +125,8 @@ void extra::beginSpaceEngraving(unsigned time)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
     useProgram(program);
-    float phase = (float(time)-6500)/4500.f;
+    // Same reveal interval as the first recorded turn: 20329..22338 ms.
+    float phase = (float(sceneTime)-20329)/2009.f;
     phase = phase < 0 ? 0 : phase > 1 ? 1 : phase;
     uniformFloat(revealLocation,phase*phase*(3-2*phase));
     active = true;
