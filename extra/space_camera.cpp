@@ -9,8 +9,8 @@ using d3d9::Vector3;
 struct Pose { Vector3 eye, target; float fov, roll; };
 struct Key { unsigned time; Pose pose; };
 const Key keys[] = {
-    {0,     {{-3,32,-400}, {-3,32,-389}, 13, 0}},
-    {6500,  {{3.7f,32,-400}, {3.7f,32,-389}, 13, 0}},
+    {0,     {{-2.4f,30.2f,-400}, {-2.4f,30.2f,-389}, 38, 0}},
+    {6500,  {{0.6f,30.2f,-400}, {0.6f,30.2f,-389}, 38, 0}},
     {15000, {{7.0f,32.2f,-394}, {3.7f,31.9f,-390.5f}, 24, -3}},
     {23000, {{4.5f,32.5f,-392.8f}, {3.5f,31.9f,-390.5f}, 32, 2}},
     {30000, {{-7,36,-398}, {0,34,-389}, 38, -3}},
@@ -87,7 +87,7 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
     if (time < 11500) {
         // Parallel rays keep the plaque and raised figures scrolling as one flat image.
         d3d9::Matrix flat;
-        constexpr float halfHeight = 1.6f;
+        constexpr float halfHeight = 7.4f;
         flat._11 = 1.f / (halfHeight * 4.f / 3.f);
         flat._22 = 1.f / halfHeight;
         flat._33 = 1.f / 10000.f;
