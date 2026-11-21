@@ -12,13 +12,13 @@ const Shot shots[] = {
     {0,6500,
         {{-15,30.2f,-392.5f},{-15,30.2f,-381.5f},38,0},
         {{-0.2f,30.2f,-392.5f},{-0.2f,30.2f,-381.5f},38,0}},
-    // Cut from the engraving to a lateral portrait of the two raised figures.
+    // Ease out of the flat scroll into a lateral portrait.
     {6500,13000,
-        {{6,32.3f,-394},{3.8f,31.8f,-390.5f},28,-3},
-        {{2.1f,32.6f,-394},{3.5f,31.8f,-390.5f},30,2}},
+        {{-0.2f,30.2f,-392.5f},{-0.2f,30.2f,-381.5f},38,0},
+        {{2.1f,32.6f,-394},{3.5f,32.1f,-390.5f},30,2}},
     {13000,18500,
-        {{1.7f,32,-393.2f},{2.8f,31.6f,-390.2f},26,2},
-        {{2.3f,32.4f,-393},{3.2f,31.9f,-390.2f},29,-2}},
+        {{5.8f,32.8f,-393.5f},{4,32.2f,-390.5f},24,2},
+        {{2.3f,32.6f,-394},{3.6f,32.2f,-390.5f},28,-3}},
     // Inspect the Geiger instrument from outside the front of the body.
     {18500,26500,
         {{42,29,-425},{20.4f,21,-388.4f},32,-4},
@@ -40,6 +40,37 @@ Vector3 cross(Vector3 a, Vector3 b)
 Vector3 unit(Vector3 a)
 { Vector3 result; D3DXVec3Normalize(&result,&a); return result; }
 float dot(Vector3 a,Vector3 b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
+
+Vector3 slerp(Vector3 a, Vector3 b, float t)
+{
+    const float cosine = std::clamp(dot(a,b),-1.f,1.f);
+    if (cosine > 0.999f)
+        return unit(mix(a,b,t));
+    if (cosine < -0.999f) {
+        const auto axis = unit(cross(a,std::abs(a.y)<0.9f ? Vector3{0,1,0} : Vector3{1,0,0}));
+        const float angle = 3.14159265f*t;
+        return {a.x*std::cos(angle)+axis.x*std::sin(angle),
+            a.y*std::cos(angle)+axis.y*std::sin(angle),
+            a.z*std::cos(angle)+axis.z*std::sin(angle)};
+    }
+    const float angle = std::acos(cosine);
+    const float left = std::sin((1-t)*angle)/std::sin(angle);
+    const float right = std::sin(t*angle)/std::sin(angle);
+    return {a.x*left+b.x*right,a.y*left+b.y*right,a.z*left+b.z*right};
+}
+
+Pose travel(Pose a, Pose b, float t, float clearance)
+{
+    const auto target = mix(a.target,b.target,t);
+    const Vector3 from{a.eye.x-a.target.x,a.eye.y-a.target.y,a.eye.z-a.target.z};
+    const Vector3 to{b.eye.x-b.target.x,b.eye.y-b.target.y,b.eye.z-b.target.z};
+    const float fromRadius = std::sqrt(dot(from,from));
+    const float toRadius = std::sqrt(dot(to,to));
+    const auto direction = slerp(unit(from),unit(to),t);
+    const float radius = fromRadius+(toRadius-fromRadius)*t+clearance*std::sin(3.14159265f*t);
+    return {{target.x+direction.x*radius,target.y+direction.y*radius,target.z+direction.z*radius},
+        target,a.fov+(b.fov-a.fov)*t,a.roll+(b.roll-a.roll)*t};
+}
 }
 
 void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& projection)
@@ -47,13 +78,17 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
     if (!enabled || time >= 61000)
         return;
     Pose pose = shots[0].from;
-    for (const auto& shot : shots) {
+    for (unsigned index=0; index<sizeof(shots)/sizeof(shots[0]); ++index) {
+        const auto& shot = shots[index];
         if (time >= shot.end)
             continue;
-        const float t = smooth(float(time-shot.start)/(shot.end-shot.start));
+        const float phase = float(time-shot.start)/(shot.end-shot.start);
+        const float t = 0.15f*phase+0.85f*smooth(phase);
         pose = {mix(shot.from.eye,shot.to.eye,t), mix(shot.from.target,shot.to.target,t),
             shot.from.fov+(shot.to.fov-shot.from.fov)*t,
             shot.from.roll+(shot.to.roll-shot.from.roll)*t};
+        if (index >= 3 && time < shot.start+2200)
+            pose = travel(shots[index-1].to,pose,smooth((time-shot.start)/2200.f),65.f);
         break;
     }
     if (time >= 42000) {
@@ -63,6 +98,8 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
         pose = {{radius*std::cos(angle),100+25*std::sin(phase*3.14159265f),
             -360+radius*std::sin(angle)}, {0,65,-360}, 48, 2*std::sin(phase*3.14159265f)};
     }
+    if (time >= 42000 && time < 44500)
+        pose = travel(shots[5].to,pose,smooth((time-42000)/2500.f),50.f);
     auto forward = unit({pose.target.x-pose.eye.x,pose.target.y-pose.eye.y,pose.target.z-pose.eye.z});
     auto right = unit(cross({0,1,0},forward));
     auto up = cross(forward,right);
@@ -94,7 +131,7 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
     device.SetTransform(d3d9::D3DTS_VIEW,&view);
     // A shorter near plane permits the close inspection of the plaque figures.
     D3DXMatrixPerspectiveFovLH(&projection,pose.fov*0.01745329252f,4.f/3.f,0.05f,10000);
-    if (time < 6500) {
+    if (time < 11000) {
         // Parallel rays keep the plaque and raised figures scrolling as one flat image.
         d3d9::Matrix flat;
         constexpr float halfHeight = 7.4f;
@@ -102,7 +139,7 @@ void extra::applySpaceCamera(d3d9::Device& device, unsigned time, d3d9::Matrix& 
         flat._22 = 1.f / halfHeight;
         flat._33 = 1.f / 10000.f;
         flat._43 = -0.05f / 10000.f;
-        const float blend = 0;
+        const float blend = smooth(std::clamp((float(time)-6500)/4500.f,0.f,1.f));
         const Vector3 delta{pose.target.x-pose.eye.x,pose.target.y-pose.eye.y,pose.target.z-pose.eye.z};
         const float focusDistance = std::sqrt(dot(delta,delta));
         // Normalize the homogeneous scale at the subject before mixing projection types.
