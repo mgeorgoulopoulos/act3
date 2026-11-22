@@ -8,6 +8,7 @@ from unittest.mock import patch
 import zipfile
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools'))
 import release
+from release_plan import plan
 
 class PackagingTests(unittest.TestCase):
     def test_original_checksum_is_mandatory(self):
@@ -54,5 +55,16 @@ class PackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             base=Path(temp);(base/'asset-manifest.txt').write_text('123|missing.png\n')
             with self.assertRaises(ValueError):release.check_manifest(base)
+
+class ReleaseTriggerTests(unittest.TestCase):
+    def test_initial_version_publishes(self):self.assertTrue(plan('0.1.0','push','refs/heads/main'))
+    def test_unreleased_version_retries(self):self.assertTrue(plan('0.1.0','push','refs/heads/main','0.1.0',False))
+    def test_ordinary_commit_does_not_republish(self):self.assertFalse(plan('0.1.0','push','refs/heads/main','0.1.0',True))
+    def test_next_version_publishes(self):self.assertTrue(plan('0.2.0','push','refs/heads/main','0.1.0',False))
+    def test_version_cannot_go_backwards(self):
+        with self.assertRaises(ValueError):plan('0.1.0','push','refs/heads/main','0.2.0',False)
+    def test_pull_request_never_publishes(self):self.assertFalse(plan('0.2.0','pull_request','refs/pull/1/merge','0.1.0'))
+    def test_manual_publish_requires_main(self):
+        with self.assertRaises(ValueError):plan('0.1.0','workflow_dispatch','refs/heads/dev',manual=True)
 
 if __name__=='__main__':unittest.main()
