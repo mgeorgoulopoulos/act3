@@ -4,9 +4,23 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#ifndef _WIN32
+#include <GL/glx.h>
+#define APIENTRY
+#endif
 #include <GL/gl.h>
 #include <algorithm>
-namespace { GLuint image;int imageWidth,imageHeight; }
+namespace {
+GLuint image;int imageWidth,imageHeight;
+using Activate = void(APIENTRY*)(GLenum);
+Activate activeTexture(){
+#ifdef _WIN32
+    return reinterpret_cast<Activate>(wglGetProcAddress("glActiveTexture"));
+#else
+    return reinterpret_cast<Activate>(glXGetProcAddressARB(reinterpret_cast<const GLubyte*>("glActiveTexture")));
+#endif
+}
+}
 void preview::present(int width,int height) {
     if(width<=0 || height<=0)return;
     const int aspectX=extra::enabled?16:4,aspectY=extra::enabled?9:3;
@@ -17,6 +31,16 @@ void preview::present(int width,int height) {
     if(w==width && h==height){draw(w,h);return;}
     draw(w,h);
     glPushAttrib(GL_ALL_ATTRIB_BITS);
+    auto activate=activeTexture();
+    if(activate){
+        GLint units=1;glGetIntegerv(0x84e2,&units); // GL_MAX_TEXTURE_UNITS
+        for(int unit=1;unit<units;++unit){
+            activate(0x84c0+unit); // GL_TEXTURE0 + unit
+            glDisable(GL_TEXTURE_1D);glDisable(GL_TEXTURE_2D);glDisable(0x806f);glDisable(0x8513);
+            glDisable(GL_TEXTURE_GEN_S);glDisable(GL_TEXTURE_GEN_T);glDisable(GL_TEXTURE_GEN_R);glDisable(GL_TEXTURE_GEN_Q);
+        }
+        activate(0x84c0);
+    }
     if(!image)glGenTextures(1,&image);
     glBindTexture(GL_TEXTURE_2D,image);
     if(w!=imageWidth || h!=imageHeight){
@@ -31,6 +55,10 @@ void preview::present(int width,int height) {
     glClearColor(0,0,0,1);glClear(GL_COLOR_BUFFER_BIT);
     glViewport((width-w)/2,(height-h)/2,w,h);
     glDisable(GL_DEPTH_TEST);glDisable(GL_BLEND);glDisable(GL_LIGHTING);glDisable(GL_CULL_FACE);
+    // Present a plain 2D image regardless of the last historical material's state.
+    glDisable(GL_TEXTURE_GEN_S);glDisable(GL_TEXTURE_GEN_T);glDisable(GL_TEXTURE_GEN_R);
+    glDisable(0x8513); // GL_TEXTURE_CUBE_MAP
+    glDisable(GL_FOG);glDisable(GL_ALPHA_TEST);glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
     glEnable(GL_TEXTURE_2D);glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE);
     glMatrixMode(GL_TEXTURE);glPushMatrix();glLoadIdentity();
     glMatrixMode(GL_PROJECTION);glPushMatrix();glLoadIdentity();
