@@ -1,6 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include "windows_launcher.h"
+#include "windows_logo.h"
 #include "../extra/mode.h"
 #include "../recreated/mesh_preview.h"
 #include <algorithm>
@@ -14,7 +15,7 @@ struct Launcher {
     platform::LaunchOptions* options;
     std::vector<Resolution> modes;
     HWND resolution{},display{},extra{},original{};
-    HFONT font{},small{},logo{};HBRUSH brush{};HBITMAP originalLogo{};
+    HFONT font{},small{},logo{};HBRUSH brush{};HBITMAP figure{};
     bool done=false,accepted=false;float scale=1;int desktopWidth=0,desktopHeight=0;
     int px(int n)const{return int(n*scale+.5f);}
 };
@@ -95,12 +96,12 @@ LRESULT CALLBACK proc(HWND window,UINT message,WPARAM wp,LPARAM lp){
         PAINTSTRUCT ps;HDC dc=BeginPaint(window,&ps);RECT all;GetClientRect(window,&all);auto b=CreateSolidBrush(bg);FillRect(dc,&all,b);DeleteObject(b);
         auto label=[&](int x,int y,int w,int h,HFONT font,COLORREF color,const wchar_t* value){RECT r{s->px(x),s->px(y),s->px(x+w),s->px(y+h)};text(dc,font,color,r,value);};
         label(32,24,500,22,s->small,red,L"REVERSED ENGINEERS  /  2004");
-        label(28,49,500,76,s->logo,ink,L"ACT3");
-        if(s->originalLogo){
-            HDC source=CreateCompatibleDC(dc);auto old=SelectObject(source,s->originalLogo);
-            BITMAP bitmap{};GetObject(s->originalLogo,sizeof(bitmap),&bitmap);
-            SetStretchBltMode(dc,HALFTONE);SetBrushOrgEx(dc,0,0,nullptr);
-            StretchBlt(dc,s->px(462),s->px(28),s->px(106),s->px(102),source,0,0,bitmap.bmWidth,bitmap.bmHeight,SRCCOPY);
+        label(116,49,450,76,s->logo,ink,L"ACT3");
+        if(s->figure){
+            HDC source=CreateCompatibleDC(dc);auto old=SelectObject(source,s->figure);
+            BITMAP bitmap{};GetObject(s->figure,sizeof(bitmap),&bitmap);
+            BLENDFUNCTION blend{AC_SRC_OVER,0,255,AC_SRC_ALPHA};
+            AlphaBlend(dc,s->px(32),s->px(45),bitmap.bmWidth,bitmap.bmHeight,source,0,0,bitmap.bmWidth,bitmap.bmHeight,blend);
             SelectObject(source,old);DeleteDC(source);
         }
         label(32,130,500,25,s->font,muted,L"All rights reversed. Ready when you are.");
@@ -116,10 +117,10 @@ LRESULT CALLBACK proc(HWND window,UINT message,WPARAM wp,LPARAM lp){
 }
 bool platform::showLauncher(HINSTANCE instance,LaunchOptions& options){
     Launcher s{};s.options=&options;
-    s.originalLogo=LoadBitmapW(instance,MAKEINTRESOURCEW(201));
     POINT cursor{};GetCursorPos(&cursor);MONITORINFOEXW monitor{};monitor.cbSize=sizeof(monitor);
     GetMonitorInfoW(MonitorFromPoint(cursor,MONITOR_DEFAULTTOPRIMARY),&monitor);
     HDC screen=GetDC(nullptr);s.scale=GetDeviceCaps(screen,LOGPIXELSX)/96.f;ReleaseDC(nullptr,screen);
+    s.figure=loadLauncherFigure(instance,s.px(84));
     auto font=[&](int height,int weight){return CreateFontW(-s.px(height),0,0,0,weight,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,CLEARTYPE_QUALITY,DEFAULT_PITCH,L"Segoe UI");};
     s.font=font(16,FW_MEDIUM);s.small=font(12,FW_NORMAL);s.logo=font(70,FW_BOLD);s.brush=CreateSolidBrush(panel);
     DEVMODEW mode{};mode.dmSize=sizeof(mode);
@@ -135,7 +136,7 @@ bool platform::showLauncher(HINSTANCE instance,LaunchOptions& options){
     HWND window=CreateWindowExW(WS_EX_CONTROLPARENT,cls.lpszClassName,L"ACT3 / Reversed Engineers",WS_CAPTION|WS_SYSMENU,
         monitor.rcWork.left+(monitor.rcWork.right-monitor.rcWork.left-(r.right-r.left))/2,monitor.rcWork.top+(monitor.rcWork.bottom-monitor.rcWork.top-(r.bottom-r.top))/2,
         r.right-r.left,r.bottom-r.top,nullptr,nullptr,instance,&s);
-    if(!window){DeleteObject(s.font);DeleteObject(s.small);DeleteObject(s.logo);DeleteObject(s.brush);if(s.originalLogo)DeleteObject(s.originalLogo);return false;}
+    if(!window){DeleteObject(s.font);DeleteObject(s.small);DeleteObject(s.logo);DeleteObject(s.brush);if(s.figure)DeleteObject(s.figure);return false;}
     if(auto dwm=LoadLibraryExW(L"dwmapi.dll",nullptr,LOAD_LIBRARY_SEARCH_SYSTEM32)){using Fn=HRESULT(WINAPI*)(HWND,DWORD,LPCVOID,DWORD);auto set=reinterpret_cast<Fn>(GetProcAddress(dwm,"DwmSetWindowAttribute"));BOOL dark=TRUE;if(set){set(window,20,&dark,sizeof(dark));COLORREF caption=bg,captionText=ink;set(window,35,&caption,sizeof(caption));set(window,36,&captionText,sizeof(captionText));}FreeLibrary(dwm);}
     auto control=[&](const wchar_t* type,const wchar_t* title,DWORD style,int id,int x,int y,int w,int h){
         HWND child=CreateWindowExW(0,type,title,WS_CHILD|WS_VISIBLE|WS_TABSTOP|style,s.px(x),s.px(y),s.px(w),s.px(h),window,reinterpret_cast<HMENU>(INT_PTR(id)),instance,nullptr);
@@ -160,5 +161,5 @@ bool platform::showLauncher(HINSTANCE instance,LaunchOptions& options){
     control(L"BUTTON",L"Go  /  Play ACT3",BS_OWNERDRAW,goId,308,424,260,42);
     ShowWindow(window,SW_SHOW);SetForegroundWindow(window);SetFocus(extra::enabled?s.extra:s.original);
     MSG msg{};while(!s.done && GetMessageW(&msg,nullptr,0,0)>0){if(!IsDialogMessageW(window,&msg)){TranslateMessage(&msg);DispatchMessageW(&msg);}}
-    DestroyWindow(window);DeleteObject(s.font);DeleteObject(s.small);DeleteObject(s.logo);DeleteObject(s.brush);if(s.originalLogo)DeleteObject(s.originalLogo);return s.accepted;
+    DestroyWindow(window);DeleteObject(s.font);DeleteObject(s.small);DeleteObject(s.logo);DeleteObject(s.brush);if(s.figure)DeleteObject(s.figure);return s.accepted;
 }

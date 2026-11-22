@@ -1,3 +1,2 @@
-// Original bitmap recovered byte-for-byte from ACT3's RT_BITMAP 103 resource.
-201 BITMAP "assets/ui_logo.bmp"
+201 RCDATA "assets/launcher-figure.png"
 108 ICON "../Reversed Engineers.ico"
