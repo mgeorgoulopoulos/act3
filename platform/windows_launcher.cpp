@@ -86,7 +86,7 @@ LRESULT CALLBACK proc(HWND window,UINT message,WPARAM wp,LPARAM lp){
             wchar_t value[120]{};GetWindowTextW(d.hwndItem,value,120);
             if(d.CtlID==extraId||d.CtlID==originalId){
                 r.left+=s->px(18);RECT title=r;title.bottom=title.top+s->px(40);text(d.hDC,s->font,ink,title,value);
-                r.top+=s->px(34);text(d.hDC,s->small,muted,r,d.CtlID==extraId?L"16:9 / Enhanced art, cameras, color":L"4:3 / The restored 2004 production");
+                r.top+=s->px(34);text(d.hDC,s->small,muted,r,d.CtlID==extraId?L"16:9 / Enhanced definition, cameras, color":L"4:3 / The restored 2004 production");
             }else text(d.hDC,s->font,ink,r,value,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
         }
         if(d.itemState&ODS_FOCUS){RECT focus=d.rcItem;InflateRect(&focus,-s->px(4),-s->px(4));DrawFocusRect(d.hDC,&focus);}
