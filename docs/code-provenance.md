@@ -13,8 +13,8 @@ Run `python tools/source_metrics.py` to reproduce the numbers.
 | Added lines inside historical files | 71 |
 | **Edit volume including those additions, relative to original lines** | **1.05%** |
 | Unchanged historical lines retained | 12,720 |
-| Final first-party source lines | 18,693 |
-| **Unchanged historical share of the first-party source tree** | **68.05%** |
+| Final first-party source lines | 18,798 |
+| **Unchanged historical share of the first-party source tree** | **67.67%** |
 
 ## What these figures mean
 
@@ -25,7 +25,7 @@ Run `python tools/source_metrics.py` to reproduce the numbers.
   denominator for the second is the final first-party source tree.
 - C/C++ headers and sources, resource scripts, CMake, source templates and asset
   generation scripts count. Documentation, images, music, meshes, build outputs,
-  audit tools and vendored miniaudio do not.
+  audit/packaging tools, tests and vendored miniaudio do not.
 - Historical source files are counted once. Generated build-tree copies are not
   counted again. The tree still includes the old entry point, engine shell and
   camera-recording code, even where the new host does not compile those paths.
