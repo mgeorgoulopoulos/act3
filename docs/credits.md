@@ -36,5 +36,5 @@ printed in the header. Those notices remain intact. See its
 
 This repository is published under the [MIT license](../LICENSE).
 The third-party license above remains applicable to its respective component.
-Windows, OpenGL, X11, XRandR and libpng are platform/system dependencies;
+Windows, OpenGL, X11, XRandR, libpng and libjpeg are platform/system dependencies;
 this repository does not redistribute those libraries or font files.
