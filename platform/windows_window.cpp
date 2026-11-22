@@ -5,6 +5,8 @@
 #include "../extra/mode.h"
 #include "../extra/dramatometer.h"
 #include <sstream>
+#include "windows_launcher.h"
+#include <vector>
 
 namespace {
 constexpr char windowClass[] = "Act3OpenGLWindow";
@@ -42,11 +44,24 @@ int reportError(const char* message)
 
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
 {
-    std::istringstream options(args);
-    if (!*args) preview::selectOption("--extra");
-    for (std::string option; options >> option;)
-        preview::selectOption(option);
     SetProcessDPIAware();
+    std::istringstream arguments(args);std::vector<std::string> tokens;
+    for(std::string token;arguments>>token;)tokens.push_back(token);
+    platform::LaunchOptions options;std::string error;
+    if(!platform::parseOptions(tokens,options,error))return reportError(error.c_str());
+    if(options.help){MessageBoxA(nullptr,"ACT3\n\n--extra / --original\n--resolution=1920x1080\n--fullscreen / --windowed\n--no-ui (skip launcher)\n\nEscape exits playback.","ACT3 / Options",MB_OK);return 0;}
+    if(options.launcher && !platform::showLauncher(instance,options))return 0;
+    POINT cursor{};GetCursorPos(&cursor);MONITORINFOEXA monitor{};monitor.cbSize=sizeof(monitor);
+    GetMonitorInfoA(MonitorFromPoint(cursor,MONITOR_DEFAULTTOPRIMARY),&monitor);
+    struct DisplayRestore { const char* device;bool changed=false;~DisplayRestore(){if(changed)ChangeDisplaySettingsExA(device,nullptr,nullptr,0,nullptr);} } restore{monitor.szDevice};
+    if(options.fullscreen && options.width && (options.width!=monitor.rcMonitor.right-monitor.rcMonitor.left || options.height!=monitor.rcMonitor.bottom-monitor.rcMonitor.top)){
+        DEVMODEA mode{};mode.dmSize=sizeof(mode);mode.dmPelsWidth=options.width;mode.dmPelsHeight=options.height;
+        mode.dmFields=DM_PELSWIDTH|DM_PELSHEIGHT;
+        if(ChangeDisplaySettingsExA(monitor.szDevice,&mode,nullptr,CDS_FULLSCREEN,nullptr)!=DISP_CHANGE_SUCCESSFUL)
+            return reportError("That fullscreen resolution is unavailable. Choose a display mode from the resolution list.");
+        restore.changed=true;
+        GetMonitorInfoA(MonitorFromPoint(cursor,MONITOR_DEFAULTTOPRIMARY),&monitor);
+    }
     WNDCLASSA windowType{};
     windowType.style = CS_OWNDC;
     windowType.lpfnWndProc = windowProc;
@@ -56,26 +71,16 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
     if (!RegisterClassA(&windowType))
         return reportError("Could not register the window class.");
 
-    RECT area{0, 0, 800, 600};
-    int x = CW_USEDEFAULT, y = CW_USEDEFAULT;
-    if (extra::enabled) {
-        POINT cursor{};
-        GetCursorPos(&cursor);
-        MONITORINFO monitor{};
-        monitor.cbSize = sizeof(monitor);
-        if (GetMonitorInfo(MonitorFromPoint(cursor, MONITOR_DEFAULTTOPRIMARY), &monitor)) {
-            const auto& bounds = monitor.rcMonitor;
-            area.right = (bounds.right - bounds.left) * 2 / 3;
-            area.bottom = (bounds.bottom - bounds.top) * 2 / 3;
-            x = bounds.left + (bounds.right - bounds.left - area.right) / 2;
-            y = bounds.top + (bounds.bottom - bounds.top - area.bottom) / 2;
-        }
-    }
-    AdjustWindowRect(&area, WS_OVERLAPPEDWINDOW, FALSE);
-    const char* title = preview::windowTitle();
-    HWND window = CreateWindowA(windowClass, title,
-        WS_OVERLAPPEDWINDOW, x, y, area.right - area.left, area.bottom - area.top,
-        nullptr, nullptr, instance, nullptr);
+    const auto& bounds=monitor.rcMonitor;
+    int width=options.width?options.width:bounds.right-bounds.left;
+    int height=options.height?options.height:bounds.bottom-bounds.top;
+    if(options.fullscreen){width=bounds.right-bounds.left;height=bounds.bottom-bounds.top;}
+    DWORD style=options.fullscreen?WS_POPUP:WS_OVERLAPPEDWINDOW;
+    RECT area{0,0,width,height};AdjustWindowRect(&area,style,FALSE);
+    int x=options.fullscreen?bounds.left:bounds.left+((bounds.right-bounds.left)-(area.right-area.left))/2;
+    int y=options.fullscreen?bounds.top:bounds.top+((bounds.bottom-bounds.top)-(area.bottom-area.top))/2;
+    HWND window=CreateWindowA(windowClass,preview::windowTitle(),style,x,y,
+        area.right-area.left,area.bottom-area.top,nullptr,nullptr,instance,nullptr);
     if (!window)
         return reportError("Could not create the window.");
 
@@ -114,7 +119,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
             DispatchMessageA(&message);
             RECT client{};
             GetClientRect(window, &client);
-            preview::draw(client.right, client.bottom);
+            preview::present(client.right, client.bottom);
             SwapBuffers(dc);
             if (preview::finished()) PostQuitMessage(0);
         }

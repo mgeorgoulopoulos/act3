@@ -9,6 +9,8 @@ const char* windowTitle();
 bool load();
 void drawLoading(int width,int height);
 void draw(int width, int height);
+void present(int width,int height);
+void releasePresentation();
 void releaseTextures();
 bool finished();
 }

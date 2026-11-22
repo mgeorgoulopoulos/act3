@@ -1,9 +1,14 @@
 #include <GL/glx.h>
 #include <X11/keysym.h>
+#include <X11/Xatom.h>
 #include <X11/XKBlib.h>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <poll.h>
+#include <unistd.h>
+#include "launch_options.h"
+#include "linux_display.h"
 #include "../recreated/mesh_preview.h"
 #include "../extra/mode.h"
 #include "../extra/dramatometer.h"
@@ -15,8 +20,10 @@ int reportError(const char* message)
     return 1;
 }
 
-int runWindow(Display* display)
+int runWindow(Display* display,const platform::LaunchOptions& options)
 {
+    platform::LinuxDisplay monitor(display);std::string displayError;
+    if(!monitor.configure(options,displayError))return reportError(displayError.c_str());
     const int screen = DefaultScreen(display);
     int attributes[] = {GLX_RGBA, GLX_DOUBLEBUFFER, GLX_RED_SIZE, 8,
         GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, GLX_DEPTH_SIZE, 24, None};
@@ -37,11 +44,17 @@ int runWindow(Display* display)
                 if(std::memcmp(keyboard->names->keys[key].name,"AC03",4)==0) physicalD=static_cast<KeyCode>(key);
         XkbFreeKeyboard(keyboard,XkbAllComponentsMask,True);
     }
-    int width = extra::enabled ? DisplayWidth(display, screen) * 2 / 3 : 800;
-    int height = extra::enabled ? DisplayHeight(display, screen) * 2 / 3 : 600;
-    const Window window = XCreateWindow(display, root, 0, 0, width, height, 0,
+    int width = options.width ? options.width : monitor.width;
+    int height = options.height ? options.height : monitor.height;
+    std::printf("  %d x %d / %s / Escape to exit\n\n",width,height,options.fullscreen?"fullscreen":"windowed");
+    const Window window = XCreateWindow(display, root, monitor.x, monitor.y, width, height, 0,
         visual->depth, InputOutput, visual->visual,
         CWColormap | CWEventMask, &settings);
+    if(options.fullscreen){
+        Atom state=XInternAtom(display,"_NET_WM_STATE",False);
+        Atom full=XInternAtom(display,"_NET_WM_STATE_FULLSCREEN",False);
+        XChangeProperty(display,window,state,XA_ATOM,32,PropModeReplace,reinterpret_cast<unsigned char*>(&full),1);
+    }
     GLXContext context = glXCreateContext(display, visual, nullptr, True);
     XFree(visual);
 
@@ -56,6 +69,7 @@ int runWindow(Display* display)
             glXMakeCurrent(display, None, nullptr); glXDestroyContext(display, context); XDestroyWindow(display, window); XFreeColormap(display, settings.colormap);
             return reportError("Could not initialize ACT3 scenes or soundtrack.");
         }
+        std::puts("  Ready. Enjoy ACT3.\n");
         const Atom protocols = XInternAtom(display, "WM_PROTOCOLS", False);
         Atom close = XInternAtom(display, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(display, window, &close, 1);
@@ -68,7 +82,7 @@ int runWindow(Display* display)
             if (!XPending(display)) {
                 pollfd connection{ConnectionNumber(display), POLLIN, 0};
                 if (poll(&connection, 1, 16) <= 0) {
-                    preview::draw(width, height);
+                    preview::present(width, height);
                     glXSwapBuffers(display, window);
                     if (preview::finished()) running = false;
                     continue;
@@ -82,7 +96,7 @@ int runWindow(Display* display)
                 height = event.xconfigure.height;
                 // Fall through to repaint with the new size.
             case Expose:
-                preview::draw(width, height);
+                preview::present(width, height);
                 glXSwapBuffers(display, window);
                 if (preview::finished()) running = false;
                 break;
@@ -125,13 +139,16 @@ int runWindow(Display* display)
 
 int main(int argc, char** argv)
 {
-    if (argc == 1) preview::selectOption("--extra");
-    for (int i = 1; i < argc; ++i)
-        preview::selectOption(argv[i]);
+    platform::LaunchOptions options;std::string error;std::vector<std::string> arguments(argv+1,argv+argc);
+    const bool color=isatty(STDOUT_FILENO) && !std::getenv("NO_COLOR");
+    if(!platform::parseOptions(arguments,options,error)){std::fprintf(stderr,"ACT3: %s\n",error.c_str());return 2;}
+    if(options.help){platform::printHelp(color);return 0;}
+    std::printf("\n%s  ACT3 / REVERSED ENGINEERS%s\n  %s / soundtrack on\n  Loading the journey...\n\n",
+        color?"\033[1;31m":"",color?"\033[0m":"",extra::enabled?"22nd anniversary edition / 16:9":"Party version / 4:3");
     Display* display = XOpenDisplay(nullptr);
     if (!display)
         return reportError("Could not connect to the X display.");
-    const int result = runWindow(display);
+    const int result = runWindow(display,options);
     XCloseDisplay(display);
     return result;
 }

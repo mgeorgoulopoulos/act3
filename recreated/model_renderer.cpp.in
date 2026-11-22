@@ -1,4 +1,5 @@
 #include "extra/blob_grid.h"
+#include "platform/launch_options.h"
 #include "extra/mode.h"
 #include "model.h"
 #include "TextureManager.h"
@@ -48,6 +49,7 @@ static char text_buffer1[1000];
 
 void WriteToLog(const char* message)
 {
+    if (!platform::verbose) return;
     fputs(message, stderr);
     fputc('\n', stderr);
 }

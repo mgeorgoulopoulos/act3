@@ -45,8 +45,10 @@ constexpr float shadowBlurOffset = 0;
 
 void preview::selectOption(std::string_view argument)
 {
-    if (argument == "--extra")
+    if (argument == "--extra") {
+        originalRequested = false;
         extra::enabled = true;
+    }
     else if (argument == "--original") {
         originalRequested = true;
         extra::enabled = false;
@@ -209,6 +211,7 @@ void preview::draw(int width, int height)
 
 void preview::releaseTextures()
 {
+    releasePresentation();
     if (fullSelected) {
         music::release();
         releaseFullDemo();
