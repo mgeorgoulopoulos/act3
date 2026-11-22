@@ -7,6 +7,7 @@ inline bool sequenceSelected = false;
 void selectOption(std::string_view argument);
 const char* windowTitle();
 bool load();
+void drawLoading(int width,int height);
 void draw(int width, int height);
 void releaseTextures();
 bool finished();

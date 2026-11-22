@@ -85,7 +85,7 @@ void main() {
     float tear=(noise(vec2(scan,floor(seconds*9.0)))-0.5)*2.0;
     vec2 warped=clamp(uv+vec2((weave+tear)*referencePixel.x*damage*opticalRange,0.0),vec2(0.0),vec2(1.0));
     // Combined split + weave stays inside the ten-reference-pixel limit.
-    vec2 offset=((uv-0.5)*referencePixel*4.2*damage+referencePixel*high*0.15)*opticalRange;
+    vec2 offset=((uv-0.5)*referencePixel*2.1*damage+referencePixel*high*0.075)*opticalRange;
     vec3 color=vec3(texture2D(scene,clamp(warped+offset,0.0,1.0)).r,
         texture2D(scene,warped).g,texture2D(scene,clamp(warped-offset,0.0,1.0)).b);
     vec2 radius=referencePixel*mix(1.0,5.0,damage)*opticalRange;
@@ -99,7 +99,7 @@ void main() {
     // Independent one-pixel grains, with a soft distribution rather than coarse cells.
     float grain=(noise(pixel+seed)+noise(pixel.yx+seed.yx+19.7)+
         noise(pixel+seed+vec2(63.1,37.8)))/3.0-0.5;
-    color+=grain*(0.018*intensity+0.15*damage)*(0.25+sqrt(max(luminance,0.0)));
+    color+=grain*(0.018*intensity+0.23*damage)*(0.25+sqrt(max(luminance,0.0)));
     // Sparse, fine exposure fluctuations also catch light in originally dark pixels.
     float photon=pow(noise(pixel+seed+91.3),12.0);
     float shadow=1.0-smoothstep(0.02,0.40,luminance);
@@ -127,7 +127,7 @@ void main() {
 float extra::dramaAt(unsigned time)
 {
     if (time<70000) return 0.4f*(1-ease(time,27000,35000));
-    if (time<126000) return (0.8f+1.2f*shadowCloseupStrength())*(1-ease(time,124000,126000));
+    if (time<126000) return (0.8f+0.7f*shadowCloseupStrength())*(1-ease(time,124000,126000));
     if (time<166000) return 0;
     if (time<211050) return 1-0.8f*ease(time,209500,211050);
     return 0.2f*(1-ease(time,219000,221200));
@@ -136,7 +136,7 @@ float extra::postIntensity(unsigned time)
 {
     if(!enabled)return 0;
     const float base=std::max(0.10f,dramaAt(time));
-    return std::clamp(base*(0.82f+0.28f*music::features().orchestralPulse),0.10f,2.f);
+    return std::clamp(base*(0.82f+0.28f*music::features().orchestralPulse),0.10f,1.5f);
 }
 void extra::postProcess(int width,int height,unsigned time)
 {

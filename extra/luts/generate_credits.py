@@ -1,4 +1,4 @@
-"""Electric violet / cyan Credits grade. Black and white remain anchored."""
+"""Violet backdrop and Palmolive-green liquid chrome; anchored black and white."""
 from pathlib import Path
 import struct
 import zlib
@@ -9,11 +9,11 @@ def grade(r, g, b):
     rgb = [max(0, min(1, y+1.16*(c-y))) for c in (r, g, b)]
     rgb = [c+.32*c*(1-c)*(2*c-1) for c in rgb]
     shadow = y*(1-y)**3
-    green = max(0, g-max(r, b))
+    green = max(0, g-(r+b)*.5)*(1-.5*y)
     blue = max(0, b-max(r, g))
-    rgb[0] += .22*shadow + .20*blue - .12*green
-    rgb[1] += -.07*shadow + .03*green
-    rgb[2] += .46*shadow + .32*green
+    rgb[0] += .22*shadow + .20*blue - .65*green
+    rgb[1] += -.07*shadow + .60*green
+    rgb[2] += .46*shadow - .38*green
     return bytes(round(255*max(0, min(1, c))) for c in rgb)
 
 

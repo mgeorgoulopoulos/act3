@@ -48,6 +48,9 @@ int runWindow(Display* display)
     int result = 0;
     bool windowExists = true;
     if (context && glXMakeCurrent(display, window, context)) {
+        XStoreName(display,window,preview::windowTitle());
+        XMapWindow(display,window);XSync(display,False);
+        preview::drawLoading(width,height);glXSwapBuffers(display,window);glFinish();
         if (!preview::load()) {
             preview::releaseTextures();
             glXMakeCurrent(display, None, nullptr); glXDestroyContext(display, context); XDestroyWindow(display, window); XFreeColormap(display, settings.colormap);

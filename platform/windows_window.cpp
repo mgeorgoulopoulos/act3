@@ -94,6 +94,10 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
 
     int result = 0;
     if (context && wglMakeCurrent(dc, context)) {
+        ShowWindow(window,showMode);
+        RECT loading{};GetClientRect(window,&loading);
+        preview::drawLoading(loading.right,loading.bottom);
+        SwapBuffers(dc);glFinish();
         if (!preview::load()) {
             preview::releaseTextures();
             wglMakeCurrent(nullptr, nullptr); wglDeleteContext(context); ReleaseDC(window, dc); DestroyWindow(window);
