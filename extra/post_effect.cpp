@@ -133,7 +133,7 @@ float extra::dramaAt(unsigned time)
 }
 void extra::postProcess(int width,int height,unsigned time)
 {
-    const float base=dramaAt(time);
+    const float base=std::max(0.10f,dramaAt(time));
     if (!enabled || base<=0) return;
     if (!attempted) {
         attempted=true;
@@ -141,7 +141,7 @@ void extra::postProcess(int width,int height,unsigned time)
     }
     if (!frame) return;
     const float pulse=music::features().orchestralPulse;
-    const float intensity=std::min(1.f,base*(0.82f+0.28f*pulse));
+    const float intensity=std::clamp(base*(0.82f+0.28f*pulse),0.10f,1.f);
     glPushAttrib(GL_ENABLE_BIT|GL_TEXTURE_BIT|GL_COLOR_BUFFER_BIT|GL_CURRENT_BIT|GL_TRANSFORM_BIT);
     glBindTexture(GL_TEXTURE_2D,frame);
     if (frameWidth!=width||frameHeight!=height) {
