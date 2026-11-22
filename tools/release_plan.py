@@ -12,7 +12,8 @@ publish=False
 if event=='push' and os.environ.get('GITHUB_REF')=='refs/heads/main':
     before=context.get('before','0'*40)
     previous=subprocess.run(['git','show',before+':VERSION'],cwd=ROOT,capture_output=True,text=True).stdout.strip() if before.strip('0') else ''
-    publish=previous!=current
+    tagged=subprocess.run(['git','show-ref','--verify','--quiet','refs/tags/v'+current],cwd=ROOT).returncode==0
+    publish=previous!=current or not tagged
     if publish and previous and tuple(map(int,current.split('.')))<=tuple(map(int,previous.split('.'))):
         raise SystemExit('A release bump must increase VERSION')
 elif event=='workflow_dispatch':

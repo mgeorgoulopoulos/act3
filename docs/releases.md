@@ -11,7 +11,8 @@ This is Michalis's personal restoration, not an official Reversed Engineers rele
 The workflow publishes only after both platform builds, asset checks and packaging
 succeed. It creates a versioned GitHub release and uploads `ACT3.zip` plus
 `ACT3.zip.sha256`. Failed builds leave the last good download available.
-Ordinary commits and pull requests build without publishing. A manual workflow run
+Ordinary commits after a published version, and pull requests, build without publishing.
+An unreleased version is retried on the next main push if its first build fails. A manual workflow run
 can build without release; its explicit `publish` switch permits a release from
 `main`, useful for a first release or retry. An existing published version is never
 silently replaced with a different source commit.
