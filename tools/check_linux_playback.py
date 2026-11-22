@@ -39,8 +39,17 @@ def flood_window_events(stop, started, state):
     try:
         while not stop.is_set() and time.monotonic() - started < 3:
             stop.wait(0.05)
-        windows = subprocess.check_output(['xdotool', 'search', '--onlyvisible', '--name', 'ACT3'], timeout=5)
-        window = int(windows.splitlines()[0])
+        while not stop.is_set():
+            search = subprocess.run(['xdotool', 'search', '--onlyvisible', '--name', 'ACT3'],
+                                    capture_output=True, timeout=5)
+            if search.returncode == 0:
+                break
+            if time.monotonic() - started > 12:
+                raise RuntimeError('Player window did not become visible')
+            stop.wait(0.1)
+        if stop.is_set():
+            return
+        window = int(search.stdout.splitlines()[0])
         event = Event()
         event.message.type = 33  # ClientMessage
         event.message.display = display
