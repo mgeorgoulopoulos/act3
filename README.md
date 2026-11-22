@@ -2,6 +2,13 @@
 
 **A 2004 demoscene production. Restored, remastered, reversed.**
 
+## [Download latest — Windows + Linux](https://github.com/mgeorgoulopoulos/act3/releases/latest/download/ACT3.zip)
+
+**One ZIP. Extract and run `ACT3.exe` on Windows or `./ACT3-linux-x86_64` on Linux.**
+[Release notes and checksums](https://github.com/mgeorgoulopoulos/act3/releases/latest) ·
+[Build / release status](https://github.com/mgeorgoulopoulos/act3/actions/workflows/release.yml)
+
+
 ![Electronic flowers reaching toward the light in the anniversary edition](docs/images/eggplants.jpg)
 
 ACT3 is Reversed Engineers' first PC demo, originally presented at **React 2004**.
@@ -98,6 +105,9 @@ The Release executable is `build/Release/act3.exe`.
 
 Linux has a terminal interface instead of a settings GUI. It uses **X11/GLX**,
 **XRandR** for display modes and the same OpenGL renderer and miniaudio playback.
+The portable x86_64 release targets **glibc 2.31+**, with bundled image/XRandR helper
+libraries and a statically linked GCC runtime. The system supplies libc, X11/XCB,
+OpenGL drivers and an audio backend. No AppImage/FUSE runtime is required.
 A desktop OpenGL compatibility context is required; a core-only or OpenGL ES
 context is not the target of this restoration.
 
@@ -110,9 +120,9 @@ cmake --build build -j
 ./build/act3
 ```
 
-**Linux support is implemented but has not yet been build- or runtime-tested.**
-Windows is the validated platform so far. Linux testing and portability fixes
-are welcome; a native Wayland backend is not currently included.
+The release workflow builds Linux in a Debian 11 container and checks the relocated
+executable and complete asset bundle on Ubuntu 24.04. GPU/audio playback across
+distros still needs real-machine testing; a native Wayland backend is not included.
 
 ### Command-line options
 
@@ -127,11 +137,14 @@ are welcome; a native Wayland backend is not currently included.
 On Windows, add `--no-ui` to bypass the launcher. `--space`, `--shadow`, `--blob`,
 `--credits` and `--sequence` open development previews; soundtrack playback is
 provided by the full-demo path. `--verbose` enables resource diagnostics.
+`--version` reports the build version and `--check-assets` checks the portable bundle.
 **Escape exits playback.** Terminal color respects `NO_COLOR` and redirected output.
 
 Original assets are included in `assets/original/`; no adjacent archive checkout,
 legacy DirectX SDK or 2004 audio DLL is needed. Keep the generated `assets/`
-directory with the executable when copying a build.
+directory with the executable when copying a build. Alternatively, create a portable
+installation with `cmake --install build --config Release --prefix dist/local`;
+that folder contains the executable, `data/`, `extra/` and an asset manifest.
 
 ## How the restoration works
 
@@ -202,6 +215,19 @@ python tools/source_metrics.py
    focus and color were judged in motion with the original soundtrack.
 
 More in the [restoration notes](docs/restoration.md).
+
+## Releases
+
+Change the root [`VERSION`](VERSION) file (for example, `0.1.0` to `0.1.1`), commit
+and push to `main`. The workflow builds both platforms from that exact commit,
+downloads and verifies the original scene.org package, and publishes a `v0.1.1`
+release containing **`ACT3.zip`** and its SHA-256 checksum. Ordinary commits run CI
+without creating a release. The download link above always points at the latest
+published version; it does not change when the version changes.
+
+The original executable is retained as `ACT3-2004.exe`; the new players share the
+original data and anniversary assets. See [release packaging](docs/releases.md)
+for the archive layout, Linux portability boundary and manual workflow controls.
 
 ## License and credits
 

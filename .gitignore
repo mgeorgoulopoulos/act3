@@ -12,3 +12,7 @@ desktop.ini
 .DS_Store
 .env
 .env.*
+
+/dist/
+/stage/
+__pycache__/

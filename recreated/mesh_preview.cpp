@@ -1,4 +1,5 @@
 #include "mesh_preview.h"
+#include "assets.h"
 #include "blob_preview.h"
 #include "space_preview.h"
 #include "credits_preview.h"
@@ -105,7 +106,7 @@ bool preview::load()
     const auto previous = fs::current_path(error);
     if (error)
         return false;
-    fs::current_path(ACT3_ASSET_ROOT, error);
+    fs::current_path(runtime::assetRoot(), error);
     if (error)
         return false;
     if (fullSelected) {

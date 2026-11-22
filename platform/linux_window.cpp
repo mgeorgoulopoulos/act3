@@ -1,3 +1,5 @@
+#include "recreated/assets.h"
+#include <cstdio>
 #include <GL/glx.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
@@ -142,6 +144,8 @@ int main(int argc, char** argv)
     platform::LaunchOptions options;std::string error;std::vector<std::string> arguments(argv+1,argv+argc);
     const bool color=isatty(STDOUT_FILENO) && !std::getenv("NO_COLOR");
     if(!platform::parseOptions(arguments,options,error)){std::fprintf(stderr,"ACT3: %s\n",error.c_str());return 2;}
+    if(options.version){std::puts("ACT3 " ACT3_VERSION);return 0;}
+    if(options.checkAssets){if(!runtime::checkAssets(error))return reportError(error.c_str());std::puts("ACT3 assets OK");return 0;}
     if(options.help){platform::printHelp(color);return 0;}
     std::printf("\n%s  ACT3 / REVERSED ENGINEERS%s\n  %s / soundtrack on\n  Loading the journey...\n\n",
         color?"\033[1;31m":"",color?"\033[0m":"",extra::enabled?"22nd anniversary edition / 16:9":"Party version / 4:3");

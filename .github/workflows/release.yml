@@ -1,0 +1,158 @@
+name: Build and release ACT3
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the current VERSION (main only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Validate version and release trigger
+        id: plan
+        run: python tools/release_plan.py
+      - name: Test release packaging
+        run: python -m unittest discover -s tests -v
+      - name: Download and verify original scene.org release
+        run: python tools/release.py fetch-original --output build/original.zip
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: original-release
+          path: build/original.zip
+          retention-days: 3
+
+  windows:
+    needs: prepare
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: original-release
+          path: build/download
+      - run: python tools/release.py extract-original --archive build/download/original.zip --output build/original
+      - name: Configure
+        shell: pwsh
+        run: cmake -S . -B build/ci -G "Visual Studio 17 2022" -A x64 "-DACT3_GEOMETRY_DIR=$PWD/build/original/ACT3/data/geometry"
+      - name: Build (static MSVC runtime)
+        run: cmake --build build/ci --config Release --parallel 2
+      - name: Install portable layout
+        run: cmake --install build/ci --config Release --prefix stage/windows
+      - name: Verify assets from an unrelated working directory
+        shell: pwsh
+        run: |
+          $binary = Join-Path $PWD 'stage/windows/act3.exe'
+          $process = Start-Process -FilePath $binary -ArgumentList '--check-assets' -WorkingDirectory $env:RUNNER_TEMP -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Relocated Windows asset check failed: $($process.ExitCode)" }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-x64
+          path: stage/windows/
+          retention-days: 3
+
+  linux:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: original-release
+          path: build/download
+      - name: Build in the glibc 2.31 container
+        run: |
+          docker build -f packaging/linux.Dockerfile -t act3-linux-build .
+          docker run --rm -v "$PWD:/src" act3-linux-build sh -ec '
+            python3 tools/release.py extract-original --archive build/download/original.zip --output build/original
+            cmake -S . -B build/linux-ci -DCMAKE_BUILD_TYPE=Release -DACT3_PORTABLE_LINUX=ON -DACT3_GEOMETRY_DIR=/src/build/original/ACT3/data/geometry
+            cmake --build build/linux-ci --parallel 2
+            cmake --install build/linux-ci --prefix stage/linux
+            python3 tools/bundle_linux.py stage/linux
+            cd /tmp
+            /src/stage/linux/act3 --version
+            /src/stage/linux/act3 --check-assets
+          '
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-x86_64
+          path: stage/linux/
+          retention-days: 3
+
+  package:
+    needs: [prepare, windows, linux]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: original-release
+          path: build/download
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: windows-x64
+          path: stage/windows
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: linux-x86_64
+          path: stage/linux
+      - name: Assemble the combined ZIP
+        run: python tools/release.py assemble --original build/download/original.zip --windows stage/windows --linux stage/linux --output dist/ACT3.zip
+      - name: Verify extraction, loader and assets on a current distro
+        run: |
+          unzip -q dist/ACT3.zip -d build/unpacked
+          cd /tmp
+          "$GITHUB_WORKSPACE/build/unpacked/ACT3/ACT3-linux-x86_64" --version
+          "$GITHUB_WORKSPACE/build/unpacked/ACT3/ACT3-linux-x86_64" --check-assets
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ACT3-download
+          path: dist/ACT3.zip*
+          retention-days: 7
+
+  release:
+    needs: [prepare, package]
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ needs.prepare.outputs.version }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: ACT3-download
+          path: dist
+      - name: Publish a complete versioned release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: python tools/publish_release.py

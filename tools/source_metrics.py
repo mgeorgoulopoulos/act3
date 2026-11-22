@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def git(*args):
     return subprocess.check_output(['git', *args], cwd=ROOT)
 def source(name):
-    return (not name.startswith(('third_party/', 'tools/', 'docs/')) and
+    return (not name.startswith(('third_party/', 'tools/', 'docs/', 'tests/')) and
             (Path(name).suffix in {'.cpp', '.h', '.rc', '.in', '.py', '.ps1'} or name == 'CMakeLists.txt'))
 def lines(data):
     return [line.rstrip() for line in data.splitlines()]
@@ -65,7 +65,7 @@ Run `python tools/source_metrics.py` to reproduce the numbers.
   denominator for the second is the final first-party source tree.
 - C/C++ headers and sources, resource scripts, CMake, source templates and asset
   generation scripts count. Documentation, images, music, meshes, build outputs,
-  audit tools and vendored miniaudio do not.
+  audit/packaging tools, tests and vendored miniaudio do not.
 - Historical source files are counted once. Generated build-tree copies are not
   counted again. The tree still includes the old entry point, engine shell and
   camera-recording code, even where the new host does not compile those paths.

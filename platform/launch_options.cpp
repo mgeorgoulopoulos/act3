@@ -12,6 +12,8 @@ bool platform::parseOptions(const std::vector<std::string>& args,LaunchOptions& 
     preview::selectOption("--demo");preview::selectOption("--original");
     for(const auto& a:args) {
         if(a=="--help" || a=="-h") o.help=true;
+        else if(a=="--version") o.version=true;
+        else if(a=="--check-assets") o.checkAssets=true;
         else if(a=="--verbose") verbose=true;
         else if(a=="--no-ui") o.launcher=false;
         else if(a=="--fullscreen") o.fullscreen=true;
@@ -46,6 +48,8 @@ void platform::printHelp(bool color) {
         "  PREVIEW\n"
         "    --space --shadow --blob --credits --sequence\n"
         "                         Play one part instead of the full demo\n\n"
+        "  --version              Show the player version\n"
+        "  --check-assets         Verify the complete asset bundle\n"
         "  --verbose              Show resource diagnostics\n"
         "  --help, -h             Show this guide\n\n"
         "  Black bars preserve 16:9 / 4:3. Escape exits playback.\n"

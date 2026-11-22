@@ -1,3 +1,4 @@
+#include "recreated/assets.h"
 #include "d3dx9.h"
 #include "../../extra/mode.h"
 #include "../../extra/credits.h"
@@ -30,7 +31,7 @@ bool readImage(const std::string& path, unsigned& width, unsigned& height,
     ComPtr<IWICBitmapDecoder> decoder;
     ComPtr<IWICBitmapFrameDecode> frame;
     ComPtr<IWICFormatConverter> converter;
-    const std::wstring filename(path.begin(), path.end());
+    const auto filename=std::filesystem::u8path(path).wstring();
     if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
             IID_PPV_ARGS(&factory))) ||
         FAILED(factory->CreateDecoderFromFilename(filename.c_str(), nullptr, GENERIC_READ,
@@ -84,15 +85,15 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file
         return D3DERR_INVALIDCALL;
     const auto name = path.substr(14);
     path = extra::enabled && (name == "circuit.png" || name == "room_sna.png" || name == "Pioneer.png" || name == "lex.png")
-        ? std::string(ACT3_ASSET_ROOT) + "/extra/textures/" + name
-        : std::string(ACT3_TEXTURE_DIR) + '/' + name;
+        ? runtime::assetRoot().u8string() + "/extra/textures/" + name
+        : runtime::textureRoot().u8string() + '/' + name;
     if (extra::enabled && extra::creditsActive) {
         if (name.compare(0,8,"Credits/") == 0)
-            path = std::string(ACT3_ASSET_ROOT) + "/extra/textures/" + name;
+            path = runtime::assetRoot().u8string() + "/extra/textures/" + name;
         else if (name == "cow.png" || name == "floor.png" || name == "end.png" || name == "star.png")
-            path = std::string(ACT3_ASSET_ROOT) + "/extra/textures/Credits/" + name;
+            path = runtime::assetRoot().u8string() + "/extra/textures/Credits/" + name;
         else if (name.compare(0,10,"Flashback/") == 0)
-            path = std::string(ACT3_ASSET_ROOT) + "/extra/textures/" + name.substr(0,name.size()-4) + ".png";
+            path = runtime::assetRoot().u8string() + "/extra/textures/" + name.substr(0,name.size()-4) + ".png";
     }
     std::vector<unsigned char> pixels;
 #ifdef _WIN32
@@ -207,7 +208,7 @@ d3d9::HRESULT D3DXCreateCubeTextureFromFile(d3d9::Device* device, const char* fi
         for (unsigned face = 0; face < 6 && ready; ++face) {
             unsigned width, height;
             std::vector<unsigned char> pixels;
-            ready = readImage(std::string(ACT3_ASSET_ROOT) + (creditsCube ? "/extra/textures/Credits/chrome-" : "/extra/textures/space-cube-") +
+            ready = readImage(runtime::assetRoot().u8string() + (creditsCube ? "/extra/textures/Credits/chrome-" : "/extra/textures/space-cube-") +
                 std::to_string(face) + ".png", width, height, pixels) && width == height;
             if (ready)
                 glTexImage2D(positiveX + face, 0, GL_RGBA8, width, height, 0,
@@ -229,7 +230,7 @@ d3d9::HRESULT D3DXCreateCubeTextureFromFile(d3d9::Device* device, const char* fi
         *result = texture;
         return D3D_OK;
     }
-    std::ifstream input(std::string(ACT3_TEXTURE_DIR) + '/' + path.substr(14),
+    std::ifstream input(runtime::textureRoot() / std::filesystem::u8path(path.substr(14)),
         std::ios::binary);
     const std::vector<unsigned char> bytes(std::istreambuf_iterator<char>(input), {});
     if (bytes.size() < 128)

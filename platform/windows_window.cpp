@@ -1,3 +1,5 @@
+#include "recreated/assets.h"
+#include <cstdio>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <GL/gl.h>
@@ -49,6 +51,8 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
     for(std::string token;arguments>>token;)tokens.push_back(token);
     platform::LaunchOptions options;std::string error;
     if(!platform::parseOptions(tokens,options,error))return reportError(error.c_str());
+    if(options.version){MessageBoxA(nullptr,ACT3_VERSION,"ACT3 / Version",MB_OK);return 0;}
+    if(options.checkAssets){if(!runtime::checkAssets(error)){std::fprintf(stderr,"%s\n",error.c_str());return 2;}std::puts("ACT3 assets OK");return 0;}
     if(options.help){MessageBoxA(nullptr,"ACT3\n\n--extra / --original\n--resolution=1920x1080\n--fullscreen / --windowed\n--no-ui (skip launcher)\n\nEscape exits playback.","ACT3 / Options",MB_OK);return 0;}
     if(options.launcher && !platform::showLauncher(instance,options))return 0;
     POINT cursor{};GetCursorPos(&cursor);MONITORINFOEXA monitor{};monitor.cbSize=sizeof(monitor);
