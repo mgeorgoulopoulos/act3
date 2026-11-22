@@ -108,7 +108,8 @@ folders and ZIPs are build outputs and stay outside Git.
 Before packaging, both editions play to their natural end under Xvfb/Mesa and
 PulseAudio on Ubuntu 24.04, using the portable Linux build. The test uses the real
 soundtrack clock, fullscreen at the virtual display's native resolution, and an
-unrelated working directory. It checks for visible, changing frames in all five
+unrelated working directory. It also injects sustained X11 client messages during the intro to catch render-loop
+starvation. It checks for visible, changing frames in all five
 parts and a normal exit after the full production. Small screenshot contact sheets
 and player output are retained as short-lived CI artifacts; the player contains
 no temporary diagnostic instrumentation. This catches stalls and gross rendering

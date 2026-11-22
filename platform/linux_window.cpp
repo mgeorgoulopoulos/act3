@@ -85,47 +85,48 @@ int runWindow(Display* display,const platform::LaunchOptions& options)
 
         bool running = true;
         while (running) {
-            if (!XPending(display)) {
-                pollfd connection{ConnectionNumber(display), POLLIN, 0};
-                if (poll(&connection, 1, 16) <= 0) {
-                    preview::present(width, height);
-                    glXSwapBuffers(display, window);
-                    if (preview::finished()) running = false;
-                    continue;
+            // Socket readiness need not mean an application event is queued.
+            // Drain a bounded batch, then render even during continuous X11 traffic.
+            const int queued = XPending(display);
+            for (int remaining = queued < 64 ? queued : 64; remaining && running; --remaining) {
+                XEvent event{};
+                XNextEvent(display, &event);
+                switch (event.type) {
+                case ConfigureNotify:
+                    width = event.xconfigure.width;
+                    height = event.xconfigure.height;
+                    break;
+                case Expose:
+                    break;
+                case KeyPress:
+                    extra::dramatometerKey((event.xkey.state&ControlMask)!=0,
+                        event.xkey.keycode==physicalD,true);
+                    if (XLookupKeysym(&event.xkey, 0) == XK_Escape) running = false;
+                    break;
+                case KeyRelease: {
+                    const auto key=XLookupKeysym(&event.xkey,0);
+                    extra::dramatometerKey(key!=XK_Control_L && key!=XK_Control_R && (event.xkey.state&ControlMask)!=0,event.xkey.keycode==physicalD,false);
+                    break;
+                }
+                case ClientMessage:
+                    if (event.xclient.message_type == protocols &&
+                        event.xclient.format == 32 &&
+                        static_cast<Atom>(event.xclient.data.l[0]) == close)
+                        running = false;
+                    break;
+                case DestroyNotify:
+                    windowExists = false;
+                    running = false;
+                    break;
                 }
             }
-            XEvent event{};
-            XNextEvent(display, &event);
-            switch (event.type) {
-            case ConfigureNotify:
-                width = event.xconfigure.width;
-                height = event.xconfigure.height;
-                // Fall through to repaint with the new size.
-            case Expose:
-                preview::present(width, height);
-                glXSwapBuffers(display, window);
-                if (preview::finished()) running = false;
-                break;
-            case KeyPress:
-                extra::dramatometerKey((event.xkey.state&ControlMask)!=0,
-                    event.xkey.keycode==physicalD,true);
-                running = XLookupKeysym(&event.xkey, 0) != XK_Escape;
-                break;
-            case KeyRelease: {
-                const auto key=XLookupKeysym(&event.xkey,0);
-                extra::dramatometerKey(key!=XK_Control_L && key!=XK_Control_R && (event.xkey.state&ControlMask)!=0,event.xkey.keycode==physicalD,false);
-                break;
-            }
-            case ClientMessage:
-                if (event.xclient.message_type == protocols &&
-                    event.xclient.format == 32 &&
-                    static_cast<Atom>(event.xclient.data.l[0]) == close)
-                    running = false;
-                break;
-            case DestroyNotify:
-                windowExists = false;
-                running = false;
-                break;
+            if (!running) break;
+            preview::present(width, height);
+            glXSwapBuffers(display, window);
+            if (preview::finished()) break;
+            if (!XPending(display)) {
+                pollfd connection{ConnectionNumber(display), POLLIN, 0};
+                poll(&connection, 1, 16);
             }
         }
         preview::releaseTextures();
