@@ -102,8 +102,40 @@ jobs:
           path: stage/linux/
           retention-days: 3
 
+  linux-playback:
+    needs: linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        edition: [original, extra]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: linux-x86_64
+          path: stage/linux
+      - name: Prepare software graphics and an audio sink
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth pulseaudio pulseaudio-utils imagemagick python3-pil libgl1-mesa-dri libglx-mesa0
+          chmod +x stage/linux/act3
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=ci
+      - name: Play every part with real audio-driven timing
+        run: |
+          xvfb-run -a -s '-screen 0 960x540x24' /usr/bin/python3 tools/check_linux_playback.py \
+            --binary stage/linux/act3 --edition ${{ matrix.edition }} --output build/playback
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: linux-playback-${{ matrix.edition }}
+          path: build/playback/
+          retention-days: 3
+
   package:
-    needs: [prepare, windows, linux]
+    needs: [prepare, windows, linux, linux-playback]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09

@@ -102,3 +102,15 @@ No personal access token is stored in the source. Only the final release job has
 `contents: write`, using GitHub's automatically issued `GITHUB_TOKEN`. Official
 actions are pinned to commit IDs. Release binaries, downloaded archives, staging
 folders and ZIPs are build outputs and stay outside Git.
+
+### Full Linux playback smoke check
+
+Before packaging, both editions play to their natural end under Xvfb/Mesa and
+PulseAudio on Ubuntu 24.04, using the portable Linux build. The test uses the real
+soundtrack clock, fullscreen at the virtual display's native resolution, and an
+unrelated working directory. It checks for visible, changing frames in all five
+parts and a normal exit after the full production. Small screenshot contact sheets
+and player output are retained as short-lived CI artifacts; the player contains
+no temporary diagnostic instrumentation. This catches stalls and gross rendering
+failures in this software-rendered environment, not vendor-specific GPU problems
+or audible output on physical hardware.
