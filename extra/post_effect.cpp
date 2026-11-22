@@ -82,7 +82,8 @@ void main() {
     float weave=sin(uv.y*52.0+seconds*2.7)*0.7;
     float tear=(noise(vec2(scan,floor(seconds*9.0)))-0.5)*2.0;
     vec2 warped=clamp(uv+vec2((weave+tear)*referencePixel.x*damage,0.0),vec2(0.0),vec2(1.0));
-    vec2 offset=(uv-0.5)*referencePixel*2.6*damage+referencePixel*high*0.15;
+    // Split grows slightly; combined split + weave stays below the five-pixel limit.
+    vec2 offset=(uv-0.5)*referencePixel*4.2*damage+referencePixel*high*0.15;
     vec3 color=vec3(texture2D(scene,clamp(warped+offset,0.0,1.0)).r,
         texture2D(scene,warped).g,texture2D(scene,clamp(warped-offset,0.0,1.0)).b);
     vec2 radius=referencePixel*mix(1.0,5.0,damage);
