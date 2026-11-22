@@ -66,6 +66,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
     windowType.style = CS_OWNDC;
     windowType.lpfnWndProc = windowProc;
     windowType.hInstance = instance;
+    windowType.hIcon=LoadIconW(instance,MAKEINTRESOURCEW(108));
     windowType.hCursor = LoadCursor(nullptr, IDC_ARROW);
     windowType.lpszClassName = windowClass;
     if (!RegisterClassA(&windowType))
