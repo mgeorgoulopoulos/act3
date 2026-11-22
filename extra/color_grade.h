@@ -1,7 +1,7 @@
 #pragma once
 
 namespace extra {
-enum class SceneGrade { Eggplants, Shadow, GreetzBackground, Greetz, Space };
+enum class SceneGrade { Eggplants, Shadow, GreetzBackground, Greetz, Space, Credits };
 void captureShadowFigure();
 void gradeGreetzBackground();
 void gradeGreetzSurface();

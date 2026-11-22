@@ -45,6 +45,7 @@ Lookup greetzBackground{"data/textures/greetz-background-grade.png"};
 Lookup greetz{"data/textures/greetz-grade.png"};
 Lookup shadow{"data/textures/shadow-grade.png"};
 Lookup space{"data/textures/space-grade.png"};
+Lookup credits{"data/textures/credits-grade.png"};
 int frameWidth, frameHeight;
 bool attempted;
 using UseProgram = void (APIENTRY*)(GLuint);
@@ -192,7 +193,7 @@ void extra::applyColorGrade(int width, int height, SceneGrade scene, unsigned ti
     }
     if (!frame)
         return;
-    auto& lut = scene == SceneGrade::Space ? space : scene == SceneGrade::Shadow ? shadow :
+    auto& lut = scene == SceneGrade::Credits ? credits : scene == SceneGrade::Space ? space : scene == SceneGrade::Shadow ? shadow :
         scene == SceneGrade::GreetzBackground ? greetzBackground :
         scene == SceneGrade::Greetz ? greetz : eggplants;
     if (!lut.attempted) {
@@ -269,7 +270,7 @@ void extra::releaseColorGrade()
             destroy(program);
     if (frame)
         glDeleteTextures(1, &frame);
-    for (auto* lut : {&eggplants, &shadow, &greetzBackground, &greetz, &space}) {
+    for (auto* lut : {&eggplants, &shadow, &greetzBackground, &greetz, &space, &credits}) {
         if (lut->texture)
             lut->texture->Release();
         lut->texture = nullptr;

@@ -1,0 +1,20 @@
+{
+  "resolution": [1920, 1080],
+  "description": "HD stills from the restored scene renderers with Extra enabled. The original flashback schedule is unchanged.",
+  "frames": [
+    {"file": "001.png", "scene": "shadow", "milliseconds": 22000},
+    {"file": "002.png", "scene": "shadow", "milliseconds": 36000},
+    {"file": "003.png", "scene": "space", "milliseconds": 65000},
+    {"file": "004.png", "scene": "credits", "milliseconds": 17500},
+    {"file": "005.png", "scene": "eggplants", "milliseconds": 5000},
+    {"file": "006.png", "scene": "eggplants", "milliseconds": 14000},
+    {"file": "007.png", "scene": "eggplants", "milliseconds": 1500},
+    {"file": "008.png", "scene": "shadow", "milliseconds": 16000},
+    {"file": "009.png", "scene": "shadow", "milliseconds": 47000},
+    {"file": "010.png", "scene": "space", "milliseconds": 44000},
+    {"file": "011.png", "scene": "space", "milliseconds": 21000},
+    {"file": "012.png", "scene": "space", "milliseconds": 19000},
+    {"file": "013.png", "scene": "space", "milliseconds": 48500},
+    {"file": "014.png", "scene": "space", "milliseconds": 53000}
+  ]
+}

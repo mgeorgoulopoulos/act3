@@ -22,6 +22,14 @@ using DWORD = std::uint32_t;
 using D3DXMATRIXA16 = d3d9::Matrix;
 struct D3DXVECTOR2 { float x, y; };
 using D3DXVECTOR3 = d3d9::Vector3;
+inline D3DXVECTOR3 operator-(const D3DXVECTOR3& a, const D3DXVECTOR3& b)
+{ return {a.x-b.x,a.y-b.y,a.z-b.z}; }
+inline D3DXVECTOR3& operator+=(D3DXVECTOR3& a, const D3DXVECTOR3& b)
+{ a.x+=b.x; a.y+=b.y; a.z+=b.z; return a; }
+inline D3DXVECTOR3& operator/=(D3DXVECTOR3& a, float b)
+{ a.x/=b; a.y/=b; a.z/=b; return a; }
+inline D3DXVECTOR3* D3DXVec3Cross(D3DXVECTOR3* out, const D3DXVECTOR3* a, const D3DXVECTOR3* b)
+{ const D3DXVECTOR3 result{a->y*b->z-a->z*b->y,a->z*b->x-a->x*b->z,a->x*b->y-a->y*b->x}; *out=result; return out; }
 struct D3DXPLANE { float a, b, c, d; };
 using D3DMATERIAL9 = d3d9::Material;
 using D3DLIGHT9 = d3d9::Light;

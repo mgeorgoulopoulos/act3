@@ -1,5 +1,6 @@
 #include "d3dx9.h"
 #include "../../extra/mode.h"
+#include "../../extra/credits.h"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -85,6 +86,14 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file
     path = extra::enabled && (name == "circuit.png" || name == "room_sna.png" || name == "Pioneer.png" || name == "lex.png")
         ? std::string(ACT3_ASSET_ROOT) + "/extra/textures/" + name
         : std::string(ACT3_TEXTURE_DIR) + '/' + name;
+    if (extra::enabled && extra::creditsActive) {
+        if (name.compare(0,8,"Credits/") == 0)
+            path = std::string(ACT3_ASSET_ROOT) + "/extra/textures/" + name;
+        else if (name == "cow.png" || name == "floor.png" || name == "end.png" || name == "star.png")
+            path = std::string(ACT3_ASSET_ROOT) + "/extra/textures/Credits/" + name;
+        else if (name.compare(0,10,"Flashback/") == 0)
+            path = std::string(ACT3_ASSET_ROOT) + "/extra/textures/" + name.substr(0,name.size()-4) + ".png";
+    }
     std::vector<unsigned char> pixels;
 #ifdef _WIN32
     const auto com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
@@ -135,7 +144,7 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
         GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
-    if (name.compare(0, 7, "Greetz/") == 0) {
+    if (name.compare(0, 7, "Greetz/") == 0 || (extra::enabled && extra::creditsActive && name.find("-grade.png") == std::string::npos)) {
         // D3DX_DEFAULT provides mip levels for the minified greeting cards.
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         for (int level = 1; width > 1 || height > 1; ++level) {
@@ -182,7 +191,8 @@ d3d9::HRESULT D3DXCreateCubeTextureFromFile(d3d9::Device* device, const char* fi
     std::replace(path.begin(), path.end(), '\\', '/');
     if (path.compare(0, 14, "data/textures/") != 0)
         return D3DERR_INVALIDCALL;
-    if (extra::enabled && path.substr(14) == "sympan.dds") {
+    const bool creditsCube = extra::enabled && extra::creditsActive && path.substr(14) == "chrome.dds";
+    if (extra::enabled && (path.substr(14) == "sympan.dds" || creditsCube)) {
         constexpr GLenum cubeMap = 0x8513, positiveX = 0x8515;
         auto* texture = new (std::nothrow) BaseTexture{0, cubeMap};
         if (!texture) return E_OUTOFMEMORY_RESULT;
@@ -197,7 +207,7 @@ d3d9::HRESULT D3DXCreateCubeTextureFromFile(d3d9::Device* device, const char* fi
         for (unsigned face = 0; face < 6 && ready; ++face) {
             unsigned width, height;
             std::vector<unsigned char> pixels;
-            ready = readImage(std::string(ACT3_ASSET_ROOT) + "/extra/textures/space-cube-" +
+            ready = readImage(std::string(ACT3_ASSET_ROOT) + (creditsCube ? "/extra/textures/Credits/chrome-" : "/extra/textures/space-cube-") +
                 std::to_string(face) + ".png", width, height, pixels) && width == height;
             if (ready)
                 glTexImage2D(positiveX + face, 0, GL_RGBA8, width, height, 0,

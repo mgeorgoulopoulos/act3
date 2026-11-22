@@ -51,3 +51,12 @@ void WriteToLog(const char* message)
 }
 
 @space_grid_effects@
+
+static float D3DXVec3Dot(const D3DXVECTOR3* a, const D3DXVECTOR3* b)
+{ return a->x*b->x + a->y*b->y + a->z*b->z; }
+constexpr float D3DX_PI = 3.14159265358979323846f;
+@credits_neighbor_create@
+@credits_neighbor_set@
+@credits_normals@
+@credits_cylinder@
+@credits_billboard@
