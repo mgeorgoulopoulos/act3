@@ -111,7 +111,9 @@ built separately to catch missing assets and reliance on local-only changes.
 Screenshots in this repository are renderer captures and a cropped application
 window, not mockups. Screenshot JPEGs are reduced for the GitHub page.
 
-Linux is kept in the CMake/platform design, but has not yet been compiled or run
-as part of this restoration. It remains an explicit validation task for Linux testers.
+Linux now builds in CI on the glibc 2.31 baseline. Both editions pass complete
+scene initialization under Xvfb/Mesa, and the extracted package passes loader and
+asset checks on Ubuntu 24.04. Visual/audio validation on real Linux hardware
+remains a task for Linux testers.
 
 For numerical preservation claims, use the [reproducible source report](code-provenance.md).

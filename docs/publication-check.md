@@ -11,9 +11,11 @@ The repository was prepared for publication with the following checks.
 - Windows Debug and Release builds passed. Aspect-ratio presentation was checked
   with 4:3, 16:9 and inherited multi-texture/cubemap state; real Space frames at
   800x600 and native display size were compared after the fix.
-- Linux remains untested; the README states that boundary explicitly.
-- The current tracked tree is approximately **43.3 MiB**. The packed Git object
-  database is approximately **42.3 MiB** at this check. Sizes will grow with later commits.
+- Windows and Linux CI builds passed. Both Linux editions passed scene initialization
+  under Xvfb/Mesa; the extracted ZIP passed loader/asset checks on Ubuntu 24.04.
+  Real-hardware visual/audio validation remains outside those checks.
+- The current tracked tree is approximately **46.3 MiB**. Exact current tree and reachable
+  blob sizes are reported by `tools/publication_audit.py`. Sizes change with later commits.
 - The largest reachable historical blob is **3.91 MiB**, the vendored miniaudio
   source header. No reachable blob exceeds 10 MiB.
 - Large required content consists of source, music, geometry and original/HD art.
@@ -48,3 +50,5 @@ not a substitute for reviewing future content.
 python tools/publication_audit.py
 python tools/source_metrics.py
 ```
+
+The first portable release was built and published by [this successful workflow](https://github.com/mgeorgoulopoulos/act3/actions/runs/45050697496). Its permanent download, SHA-256, ZIP CRCs, original executable preservation and extracted Windows scene loading were independently checked after publication.
