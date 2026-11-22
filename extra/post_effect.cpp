@@ -69,17 +69,27 @@ void main() {
     vec2 uv=gl_TexCoord[0].xy;
     vec3 original=texture2D(scene,uv).rgb;
     float high=smoothstep(0.5,1.0,intensity);
-    vec2 offset=(uv-0.5)*texel*high*1.4;
-    vec3 color=vec3(texture2D(scene,uv+offset).r,original.g,texture2D(scene,uv-offset).b);
-    vec2 radius=texel*mix(1.5,4.0,intensity);
+    float damage=high*high;
+    float scan=floor(uv.y*180.0);
+    float weave=sin(uv.y*52.0+seconds*2.7)*0.0014;
+    float tear=(noise(vec2(scan,floor(seconds*9.0)))-0.5)*0.009;
+    vec2 warped=clamp(uv+vec2((weave+tear)*damage,0.0),vec2(0.0),vec2(1.0));
+    vec2 offset=(uv-0.5)*vec2(0.030,0.012)*damage+texel*high*0.7;
+    vec3 color=vec3(texture2D(scene,clamp(warped+offset,0.0,1.0)).r,
+        texture2D(scene,warped).g,texture2D(scene,clamp(warped-offset,0.0,1.0)).b);
+    vec2 radius=texel*mix(1.5,24.0,damage);
     vec3 halo=(light(uv+vec2(radius.x,0.0))+light(uv-vec2(radius.x,0.0))+
         light(uv+vec2(0.0,radius.y))+light(uv-vec2(0.0,radius.y)))*0.25;
-    color+=max(halo-original*0.75,vec3(0.0))*vec3(0.030,0.018,0.012)*intensity;
+    color+=max(halo-original*0.45,vec3(0.0))*vec3(0.44,0.13,0.08)*damage;
     float luminance=dot(original,vec3(0.2126,0.7152,0.0722));
     float grain=noise(floor(gl_FragCoord.xy)+floor(seconds*24.0)*vec2(17.0,53.0))-0.5;
-    // No lifted black, no blur of the base image, and film-sized rather than UV-sized grain.
-    color+=grain*0.018*intensity*sqrt(max(luminance,0.0))*(1.0-0.65*luminance);
-    color+=vec3(0.008,-0.002,0.006)*high*luminance*(1.0-luminance);
+    color+=grain*(0.018*intensity+0.30*damage)*(0.16+sqrt(max(luminance,0.0)));
+    float scanline=sin(gl_FragCoord.y*3.14159265);
+    color*=1.0-damage*(0.08+0.07*scanline);
+    float edge=dot(uv-0.5,uv-0.5);
+    color*=1.0-0.68*damage*edge;
+    color=mix(color,pow(max(color,0.0),vec3(0.88,1.04,1.10)),damage*0.65);
+    color+=vec3(0.025,0.004,0.012)*damage;
     gl_FragColor=vec4(clamp(color,0.0,1.0),1.0);
 }
 )";
