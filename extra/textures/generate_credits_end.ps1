@@ -46,11 +46,9 @@ public static class CreditsEndingArt {
         using(var mask=new Bitmap(W,H,PixelFormat.Format32bppArgb)) using(var g=Graphics.FromImage(mask))
         using(var logo=new GraphicsPath()) {
             g.Clear(Color.Black); g.SmoothingMode=SmoothingMode.AntiAlias;
-            // Monumental serif letterforms, tight stacked composition and framing rules.
+            // A standalone two-line serif composition.
             Line(logo,"ALL RIGHTS",805,2440,276);
             Line(logo,"REVERSED",1132,2440,306);
-            logo.AddLine(380,742,2820,742); logo.StartFigure();
-            logo.AddLine(380,1503,2820,1503);
             using(var aperture=new Pen(Color.White,4.8f)) {
                 aperture.LineJoin=LineJoin.Round; g.DrawPath(aperture,logo);
             }
@@ -59,8 +57,8 @@ public static class CreditsEndingArt {
             var raw=new byte[W*H*4]; Marshal.Copy(data.Scan0,raw,0,raw.Length); mask.UnlockBits(data);
             var core=new float[W*H];
             for(int i=0;i<core.Length;i++) core[i]=raw[4*i+2]/255f;
-            var soft=Diffuse(core,1); var bleed=Diffuse(core,5);
-            var halo=Diffuse(core,18); var scatter=Diffuse(core,55);
+            var soft=Diffuse(core,1); var bleed=Diffuse(core,3);
+            var halo=Diffuse(core,12); var scatter=Diffuse(core,40);
             for(int y=0;y<H;y++) for(int x=0;x<W;x++) {
                 int i=y*W+x;
                 // Uneven gel exposure and fixed fine grain, rather than a uniform neon stroke.
@@ -68,8 +66,8 @@ public static class CreditsEndingArt {
                 uint hash=unchecked((uint)(x*374761393+y*668265263+19));
                 hash=(hash^(hash>>13))*1274126177u; hash^=hash>>16;
                 double grain=(hash/4294967295.0-0.5)*0.16;
-                double sharp=0.32*core[i]+0.88*soft[i];
-                double light=(sharp+2.8*bleed[i]+4.0*halo[i]+5.0*scatter[i])*exposure;
+                double sharp=0.62*core[i]+0.70*soft[i];
+                double light=(sharp+1.6*bleed[i]+2.2*halo[i]+2.5*scatter[i])*exposure;
                 light*=1+grain;
                 double hot=Math.Pow(Math.Max(0,sharp*exposure),2);
                 raw[4*i]=Channel(0.009*light+0.026*hot);
