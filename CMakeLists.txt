@@ -17,6 +17,7 @@ endif()
 
 target_compile_features(act3 PRIVATE cxx_std_17)
 target_sources(act3 PRIVATE recreated/music.cpp recreated/full_demo.cpp)
+target_sources(act3 PRIVATE extra/post_effect.cpp)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     find_package(Threads REQUIRED)
     target_link_libraries(act3 PRIVATE Threads::Threads ${CMAKE_DL_LIBS} m)
@@ -182,6 +183,8 @@ string(REPLACE "Credits/code.png" "Credits/Code.png" credits_code "${credits_cod
 string(REPLACE "if FAILED(" "if (FAILED(" credits_code "${credits_code}")
 string(REPLACE "&CubeMap\n\t\t\t))" "&CubeMap\n\t\t\t)))" credits_code "${credits_code}")
 string(REPLACE "Names.Render(m_pd3dDevice);" "extra::layoutCredits(Names);\n\t\tNames.Render(m_pd3dDevice);" credits_code "${credits_code}")
+string(REPLACE "m_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );" "extra::zoomCreditsWorld(matProj);\n\tm_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );" credits_code "${credits_code}")
+string(REPLACE "// Set View matrix to identity" "extra::restoreCreditsLens(*m_pd3dDevice);\n\t// Set View matrix to identity" credits_code "${credits_code}")
 string(REPLACE "m2.Render(m_pd3dDevice);" "extra::layoutCreditsBackground(m2);\n\tm2.Render(m_pd3dDevice);" credits_code "${credits_code}")
 string(REPLACE "RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,clr);" "if (!extra::drawCreditsCard(clr)) RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,clr);" credits_code "${credits_code}")
 string(REPLACE "RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,0xffffffff);" "if (!extra::drawCreditsCard(0xffffffff,16.f/9.f)) RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,0xffffffff);" credits_code "${credits_code}")
@@ -237,6 +240,7 @@ using namespace d3d9;
 #include "extra/space_stars.h"
 #include "extra/space_engraving.h"
 #include "extra/space_overlays.h"
+#include "extra/color_grade.h"
 #include "extra/mode.h"
 #include "recreated/full_demo.h"
 static void SetTransition(bool) {}
@@ -250,7 +254,7 @@ foreach(condition "m_dwTime > TRANSITION_BEGIN")
 endforeach()
 
 string(REPLACE "Sympan.Render(m_pd3dDevice);" "if (!extra::drawSpaceStars(*m_pd3dDevice, Sympan)) Sympan.Render(m_pd3dDevice);" space_code "${space_code}")
-string(REPLACE "Man.ClearTransform();" "extra::beginSpaceEngraving(m_dwTime);\n\tMan.ClearTransform();" space_code "${space_code}")
+string(REPLACE "Man.ClearTransform();" "extra::captureSpaceBackdrop(m_dwTime);\n\textra::beginSpaceEngraving(m_dwTime);\n\tMan.ClearTransform();" space_code "${space_code}")
 string(REPLACE "Woman.Render(m_pd3dDevice);" "Woman.Render(m_pd3dDevice);\n\textra::endSpaceEngraving();\n\textra::prepareSpaceOverlays(*m_pd3dDevice, m_dwTime);" space_code "${space_code}")
 string(REPLACE "RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,lex_clr);"
     "if (!extra::drawSpaceDefinition(lex_clr)) RenderSpecificQuad(m_pd3dDevice , 0,0,1,1,lex_clr);" space_code "${space_code}")

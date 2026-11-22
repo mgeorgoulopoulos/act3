@@ -24,6 +24,8 @@ bool initialized{}, playing{};
 music::Features analysis;
 std::array<float,window/2> previous{};
 float averageFlux{};
+float averageOrchestralFlux{};
+std::uint64_t lastOrchestralPulse{};
 
 void output(ma_device*,void* destination,const void*,ma_uint32 count)
 {
@@ -102,13 +104,16 @@ const music::Features& music::features()
             }
         }
     }
-    float flux=0,bass=0,mids=0,treble=0;
+    float flux=0,bass=0,mids=0,treble=0,orchestralFlux=0;
     std::array<float,window/2> magnitudes{};
     for (unsigned bin=1;bin<window/2;++bin) {
         const float value=std::abs(fft[bin])*4/window;
         magnitudes[bin]=value;
-        flux+=std::max(0.f,value-previous[bin]); previous[bin]=value;
         const float hz=float(bin)*rate/window;
+        const float attack=std::max(0.f,value-previous[bin]);
+        flux+=attack;
+        if (hz>=350 && hz<=6000) orchestralFlux+=attack;
+        previous[bin]=value;
         if (hz<250) bass+=value*value;
         else if (hz<4000) mids+=value*value;
         else treble+=value*value;
@@ -127,6 +132,12 @@ const music::Features& music::features()
         analysis.pulse=1; lastPulse=end;
     }
     averageFlux+=(flux-averageFlux)*(1-std::exp(-dt*2));
+    analysis.orchestralPulse*=std::exp(-dt*5.5f);
+    if (lastAnalysis && analysis.rms>0.015f && orchestralFlux>averageOrchestralFlux*1.55f+0.012f &&
+        end-lastOrchestralPulse>rate/6) {
+        analysis.orchestralPulse=1; lastOrchestralPulse=end;
+    }
+    averageOrchestralFlux+=(orchestralFlux-averageOrchestralFlux)*(1-std::exp(-dt*2));
     lastAnalysis=end;
     return analysis;
 }
@@ -137,4 +148,5 @@ void music::release()
     if (pcm) ma_free(pcm,nullptr);
     pcm=nullptr; length=0; submitted.store(0); latency=lastAnalysis=lastPulse=0;
     analysis={}; previous={}; averageFlux=0;
+    averageOrchestralFlux=0; lastOrchestralPulse=0;
 }

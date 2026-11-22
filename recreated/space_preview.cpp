@@ -1,6 +1,7 @@
 #include "space_preview.h"
 #include "space_scene.h"
 #include "extra/space_engraving.h"
+#include "extra/color_grade.h"
 #include <cstdlib>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -36,6 +37,7 @@ void preview::drawSpace(unsigned time)
         scene.m_pd3dDevice->SetProjectionHorizontalScale(4.f*viewport[3]/(3.f*viewport[2]));
     }
     scene.Render();
+    extra::gradeSpaceReveal(time);
     scene.m_pd3dDevice->SetProjectionHorizontalScale(1);
 }
 void preview::releaseSpace()

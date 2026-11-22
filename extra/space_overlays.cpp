@@ -24,6 +24,7 @@ void extra::prepareSpaceOverlays(d3d9::Device& device, unsigned time)
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT,viewport);
         applyColorGrade(viewport[2],viewport[3],SceneGrade::Space);
+        captureSpaceFigures(time);
     }
     if (time < 15000)
         device.Clear(0,nullptr,1,0xff000000,1,0);

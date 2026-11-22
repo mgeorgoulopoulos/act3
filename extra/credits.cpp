@@ -7,6 +7,21 @@
 #include <windows.h>
 #endif
 #include <GL/gl.h>
+#include <algorithm>
+namespace { d3d9::Matrix creditsLens; }
+
+void extra::zoomCreditsWorld(d3d9::Matrix& projection)
+{
+    if (!enabled) return;
+    creditsLens=projection;
+    GLint viewport[4]; glGetIntegerv(GL_VIEWPORT,viewport);
+    const float zoom=std::max(1.08f,0.96f*(float(viewport[2])/viewport[3])/(4.f/3.f));
+    projection._11*=zoom; projection._22*=zoom;
+}
+void extra::restoreCreditsLens(d3d9::Device& device)
+{
+    if (enabled) device.SetTransform(d3d9::D3DTS_PROJECTION,&creditsLens);
+}
 
 void extra::layoutCredits(MeshGrid& names)
 {

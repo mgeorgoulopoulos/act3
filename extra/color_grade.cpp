@@ -4,6 +4,7 @@
 #include "../compatibility/d3dx/d3dx9.h"
 #include <cstdio>
 #include <initializer_list>
+#include <algorithm>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -31,10 +32,15 @@ T glProc(const char* name)
 }
 
 GLuint program, frame, figure[2];
+GLuint spaceFigure[3]{};
+int spaceWidth[3]{},spaceHeight[3]{};
+bool spaceRevealPass{};
+int spaceRecovery{};
 int figureWidth, figureHeight;
 using UniformInt = void (APIENTRY*)(GLint, GLint);
 UniformInt setUniform;
 GLint figureModeLocation;
+GLint spaceRecoveryLocation;
 struct Lookup {
     const char* path;
     LPDIRECT3DTEXTURE9 texture{};
@@ -59,7 +65,9 @@ const char* fragment = R"(
 uniform sampler2D scene;
 uniform sampler2D grade;
 uniform sampler2D figureColor, figureDepth;
+uniform sampler2D backdropDepth;
 uniform int figureMode;
+uniform int spaceRecovery;
 float plasmaSeed(vec2 uv) {
     vec3 rgb = texture2D(scene, clamp(uv, 0.0, 1.0)).rgb;
     float bright = max(rgb.r, max(rgb.g, rgb.b));
@@ -83,6 +91,14 @@ vec3 slice(float r, vec2 gb) {
 void main() {
     vec2 uv = gl_TexCoord[0].xy;
     vec3 original = texture2D(scene, uv).rgb;
+    if (figureMode == 3) {
+        float figureZ = texture2D(figureDepth,uv).r;
+        float backdropZ = texture2D(backdropDepth,uv).r;
+        bool onPlaqueFigure = figureZ < backdropZ - 0.00000012;
+        vec3 recovered = texture2D(figureColor,uv).rgb;
+        gl_FragColor = vec4(mix(original,recovered,onPlaqueFigure ? float(spaceRecovery)/1000.0 : 0.0),1.0);
+        return;
+    }
     bool onFigure = figureMode != 0 && texture2D(figureDepth, uv).r < 0.999999;
     vec3 figure = vec3(0.0);
     float recovery = 0.0;
@@ -145,7 +161,9 @@ bool initialize()
     setUniform(getUniform(program, "grade"), 1);
     setUniform(getUniform(program, "figureColor"), 2);
     setUniform(getUniform(program, "figureDepth"), 3);
+    setUniform(getUniform(program, "backdropDepth"), 4);
     figureModeLocation = getUniform(program, "figureMode");
+    spaceRecoveryLocation = getUniform(program, "spaceRecovery");
     useProgram(0);
     glGenTextures(1, &frame);
     return frame != 0;
@@ -220,6 +238,7 @@ void extra::applyColorGrade(int width, int height, SceneGrade scene, unsigned ti
     }
     activeTexture(texture1);
     glBindTexture(GL_TEXTURE_2D, lut.texture->name);
+    const bool useSpace = spaceRevealPass && spaceFigure[2] && spaceWidth[2]==width && spaceHeight[2]==height;
     const bool useFigure = scene == SceneGrade::Shadow && figure[1] &&
         figureWidth == width && figureHeight == height;
     if (useFigure) {
@@ -227,6 +246,13 @@ void extra::applyColorGrade(int width, int height, SceneGrade scene, unsigned ti
             activeTexture(texture0 + 2 + i);
             glBindTexture(GL_TEXTURE_2D, figure[i]);
         }
+    }
+    if (useSpace) {
+        for (int i=0;i<2;++i) {
+            activeTexture(texture0+2+i);
+            glBindTexture(GL_TEXTURE_2D,spaceFigure[i+1]);
+        }
+        activeTexture(texture0+4); glBindTexture(GL_TEXTURE_2D,spaceFigure[0]);
     }
     activeTexture(texture0);
     glDisable(GL_BLEND);
@@ -246,8 +272,9 @@ void extra::applyColorGrade(int width, int height, SceneGrade scene, unsigned ti
     glPushMatrix();
     glLoadIdentity();
     useProgram(program);
-    const int figureMode = useFigure ? (shadowNegativeActive(time) ? 2 : 1) : 0;
+    const int figureMode = useSpace ? 3 : useFigure ? (shadowNegativeActive(time) ? 2 : 1) : 0;
     setUniform(figureModeLocation, figureMode);
+    setUniform(spaceRecoveryLocation,spaceRecovery);
     glBegin(GL_QUADS);
     glTexCoord2f(0, 0); glVertex2f(-1, -1);
     glTexCoord2f(1, 0); glVertex2f(1, -1);
@@ -277,11 +304,53 @@ void extra::releaseColorGrade()
         lut->attempted = false;
     }
     glDeleteTextures(2, figure);
+    glDeleteTextures(3,spaceFigure);
+    for(int i=0;i<3;++i) { spaceFigure[i]=0; spaceWidth[i]=spaceHeight[i]=0; }
+    spaceRevealPass=false; spaceRecovery=0;
     figure[0] = figure[1] = 0;
     figureWidth = figureHeight = 0;
     program = frame = 0;
     attempted = false;
     frameWidth = frameHeight = 0;
+}
+
+namespace {
+void captureSpaceImage(unsigned index)
+{
+    GLint viewport[4]; glGetIntegerv(GL_VIEWPORT,viewport);
+    const int width=viewport[2],height=viewport[3];
+    if(!spaceFigure[index]) glGenTextures(1,&spaceFigure[index]);
+    glPushAttrib(GL_TEXTURE_BIT);
+    glBindTexture(GL_TEXTURE_2D,spaceFigure[index]);
+    if(spaceWidth[index]!=width || spaceHeight[index]!=height) {
+        glCopyTexImage2D(GL_TEXTURE_2D,0,index==1?GL_RGB8:0x81a6,viewport[0],viewport[1],width,height,0);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,0x812f);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,0x812f);
+        spaceWidth[index]=width;spaceHeight[index]=height;
+    } else glCopyTexSubImage2D(GL_TEXTURE_2D,0,0,0,viewport[0],viewport[1],width,height);
+    glPopAttrib();
+}
+}
+void extra::captureSpaceBackdrop(unsigned time)
+{
+    if(enabled && time>=15000 && time<35000) captureSpaceImage(0);
+}
+void extra::captureSpaceFigures(unsigned time)
+{
+    if(enabled && time>=15000 && time<35000) { captureSpaceImage(1); captureSpaceImage(2); }
+}
+void extra::gradeSpaceReveal(unsigned time)
+{
+    if(!enabled || time<15000 || time>=35000) return;
+    const float in=std::clamp((time-15000)/700.f,0.f,1.f);
+    const float out=std::clamp((35000-time)/1000.f,0.f,1.f);
+    spaceRecovery=static_cast<int>(460*in*out);
+    GLint viewport[4];glGetIntegerv(GL_VIEWPORT,viewport);
+    spaceRevealPass=true;
+    applyColorGrade(viewport[2],viewport[3],SceneGrade::Space);
+    spaceRevealPass=false;
 }
 
 void extra::gradeGreetzBackground()

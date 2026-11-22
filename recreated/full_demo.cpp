@@ -9,6 +9,7 @@
 #include "extra/color_grade.h"
 #include "extra/shadow_focus.h"
 #include "extra/credits.h"
+#include "extra/post_effect.h"
 #include <cstdlib>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -117,6 +118,7 @@ void preview::drawFullDemo(d3d9::Device& device,int width,int height,unsigned ti
     } else if (time<fullDemoDuration) {
         select(4); drawCredits(device,width,height,time-185300);
     } else device.Clear(0,nullptr,1,0xff000000,1,0);
+    extra::postProcess(width,height,time);
 }
 void preview::releaseFullDemo()
 {
@@ -137,6 +139,7 @@ void preview::releaseFullDemo()
         loaded[i]=false; textures[i]=nullptr; TexMan.pFirstEntry=nullptr;
     }
     extra::releaseColorGrade(); recreated::releaseShadowBlur(); extra::releaseShadowFocus();
+    extra::releasePostProcess();
     glDeleteTextures(1,&spaceFrame); spaceFrame=0; frameWidth=frameHeight=0;
     extra::creditsActive=false; fullDemoActive=false;
 }
