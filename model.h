@@ -193,7 +193,7 @@ public:
 
 	// GEOMETRY MEMORY
 	MODEL_VERTEX*		VertexList;
-	unsigned short		NumVertices , NumCells , NumTriangles;
+	std::uint32_t		NumVertices , NumCells , NumTriangles;
 
 	double				IsoLevel;
 	float				GridWidth,GridHeight,GridDepth;
