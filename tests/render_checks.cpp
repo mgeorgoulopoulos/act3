@@ -1,4 +1,7 @@
 #include "compatibility/d3dx/d3dx9.h"
+#include "model.h"
+#include "extra/space_stars.h"
+#include "extra/mode.h"
 #include <GL/glx.h>
 #include <GL/gl.h>
 #include <algorithm>
@@ -6,6 +9,10 @@
 #include <cmath>
 #include <cstdio>
 #include <vector>
+
+// Geometry fixtures do not invoke the historical mesh renderer.
+Mesh3DS::Mesh3DS() {}
+Scene3DS::Scene3DS() {}
 
 namespace {
 bool checkLetter(d3d9::Device& device, const char* name, bool invalidEnum)
@@ -51,6 +58,45 @@ std::array<float, 2> coordinates(unsigned face, const std::array<float, 3>& d)
     case 2: return {x, z}; case 3: return {x, -z};
     case 4: return {x, -y}; default: return {-x, -y};
     }
+}
+bool checkStars(d3d9::Device& device)
+{
+    MODEL_VERTEX vertices[2]{};
+    vertices[0].x=vertices[0].y=vertices[0].z=-10;
+    vertices[1].x=vertices[1].y=vertices[1].z=10;
+    Mesh3DS meshes[2];
+    for(auto& mesh:meshes){mesh.VertexList=vertices;mesh.NumVertices=2;}
+    Scene3DS scene;scene.NumObjects=2;scene.ObjectList=meshes;
+    d3d9::Matrix view,projection;
+    D3DXMatrixPerspectiveFovLH(&projection,1.f,1.f,0.05f,10000);
+    device.SetTransform(d3d9::D3DTS_VIEW,&view);
+    device.SetTransform(d3d9::D3DTS_PROJECTION,&projection);
+    glViewport(0,0,64,64);glClearColor(0,0,0,1);
+    glDepthMask(GL_TRUE);glClearDepth(0);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    using Active=void (*)(GLenum);
+    auto active=reinterpret_cast<Active>(glXGetProcAddressARB(reinterpret_cast<const GLubyte*>("glActiveTexture")));
+    GLuint black;glGenTextures(1,&black);active(0x84c1);
+    glBindTexture(GL_TEXTURE_2D,black);const unsigned char pixel[]={0,0,0,255};
+    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,1,1,0,GL_RGBA,GL_UNSIGNED_BYTE,pixel);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glEnable(GL_TEXTURE_2D);active(0x84c0);
+    extra::enabled=false;
+    bool ready=!extra::drawSpaceStars(device,scene);
+    extra::enabled=true;
+    ready=extra::drawSpaceStars(device,scene)&&ready;
+    std::array<unsigned char,64*64*4> pixels{};
+    glReadPixels(0,0,64,64,GL_RGBA,GL_UNSIGNED_BYTE,pixels.data());
+    unsigned visible=0;
+    for(unsigned i=0;i<pixels.size();i+=4)if(pixels[i]+pixels[i+1]+pixels[i+2]>30)++visible;
+    ready=ready&&visible>50&&glIsEnabled(GL_DEPTH_TEST);
+    active(0x84c1);ready=ready&&glIsEnabled(GL_TEXTURE_2D);glDisable(GL_TEXTURE_2D);active(0x84c0);
+    ready=ready&&glGetError()==GL_NO_ERROR;
+    glDeleteTextures(1,&black);extra::releaseSpaceStars();extra::enabled=false;
+    glDisable(GL_DEPTH_TEST);glClearDepth(1);
+    std::printf("%s anniversary starfield: %u visible pixels despite inherited depth/texture state; Party bypass preserved\n",ready?"PASS":"FAIL",visible);
+    return ready;
 }
 bool checkChrome(d3d9::Device& device)
 {
@@ -98,7 +144,7 @@ int main()
 {
     Display* display = XOpenDisplay(nullptr);
     if (!display) return 2;
-    int attributes[] = {GLX_RGBA, GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, None};
+    int attributes[] = {GLX_RGBA, GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, GLX_DEPTH_SIZE, 24, None};
     auto* visual = glXChooseVisual(display, DefaultScreen(display), attributes);
     if (!visual) return 2;
     XSetWindowAttributes settings{};
@@ -107,6 +153,7 @@ int main()
         visual->depth, InputOutput, visual->visual, CWColormap, &settings);
     auto context = glXCreateContext(display, visual, nullptr, True);
     XFree(visual);
+    XMapWindow(display,window);XSync(display,False);
     if (!context || !glXMakeCurrent(display, window, context)) return 2;
     bool ready;
     {
@@ -114,6 +161,7 @@ int main()
         ready = checkLetter(device, "data/textures/act3/R.png", true);
         ready = checkLetter(device, "data/textures/act3/E.png", false) && ready;
         ready = checkChrome(device) && ready;
+        ready = checkStars(device) && ready;
     }
     glXMakeCurrent(display, None, nullptr);
     glXDestroyContext(display, context);

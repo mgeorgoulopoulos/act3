@@ -1,6 +1,7 @@
 #include "space_preview.h"
 #include "space_scene.h"
 #include "extra/space_engraving.h"
+#include "extra/space_stars.h"
 #include "extra/color_grade.h"
 #include <cstdlib>
 #ifdef _WIN32
@@ -43,6 +44,7 @@ void preview::drawSpace(unsigned time)
 void preview::releaseSpace()
 {
     extra::releaseSpaceEngraving();
+    extra::releaseSpaceStars();
     scene.Man.Release();
     scene.Woman.Release();
     scene.Release();

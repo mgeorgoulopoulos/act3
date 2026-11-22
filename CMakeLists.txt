@@ -336,11 +336,13 @@ install(FILES LICENSE VERSION DESTINATION .)
 
 option(ACT3_BUILD_RENDER_CHECKS "Build Linux texture and cubemap regression checks" OFF)
 if(ACT3_BUILD_RENDER_CHECKS AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_executable(act3-render-checks tests/render_checks.cpp recreated/assets.cpp
+    add_executable(act3-render-checks tests/render_checks.cpp recreated/assets.cpp extra/space_stars.cpp
+        compatibility/d3dx/geometry.cpp
         compatibility/d3d9/indexed_draw.cpp compatibility/d3d9/render_target.cpp
         compatibility/d3dx/texture.cpp compatibility/d3dx/jpeg.cpp)
     target_compile_features(act3-render-checks PRIVATE cxx_std_17)
     target_include_directories(act3-render-checks PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated"
         "${CMAKE_CURRENT_SOURCE_DIR}/compatibility/d3dx")
     target_link_libraries(act3-render-checks PRIVATE X11::X11 OpenGL::GL PNG::PNG JPEG::JPEG)
 endif()

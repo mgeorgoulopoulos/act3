@@ -36,7 +36,7 @@ turning the historical source into a rewrite.
 | Models and music | Original | Original |
 | Cameras | Original recorded tracks | New direction, with selected original passages retained |
 | Artwork | Original release assets | Reconstructed HD art and finer surface detail |
-| Finish | Original effects through the restored backend | Scene-specific grading, focus and music-reactive film texture |
+| Finish | Original effects through the restored backend | Scene-specific grading, focus and optional music-reactive film texture |
 
 **The default is Party version, fullscreen, at the display's current resolution.**
 Black bars preserve the selected edition's aspect ratio on other displays;
@@ -71,7 +71,7 @@ The anniversary edition also adds:
   depth-aware corrections where glare would otherwise obscure the subject.
 - **96³ marching-cubes sampling** for the blob, compared with the original 40³.
   Surface-following traversal remains; a direct visited-cell lookup supports the finer grid.
-- **Music-reactive film texture:** fine irregular grain, restrained halation,
+- **Optional music-reactive film texture:** fine irregular grain, restrained halation,
   chromatic dispersion and small registration disturbances. Each scene has a
   dramatic envelope, modulated by live spectral attacks from the soundtrack.
 - **HD graphics with artistic continuity:** reconstructed overlays, circuit and
