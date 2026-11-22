@@ -94,16 +94,6 @@ public static class CreditsArt {
             g.FillPath(Brushes.White,path); dst.Save(output,ImageFormat.Png);
         }
     }
-    public static void Ending(string output) {
-        using(var dst=new Bitmap(3200,2400)) using(var g=Graphics.FromImage(dst)) using(var path=new GraphicsPath()) {
-            g.Clear(Color.Black); g.SmoothingMode=SmoothingMode.AntiAlias;
-            Center(path,"ALL",220,585,3200); Center(path,"RIGHTS",220,900,3200); Center(path,"REVERSED",220,1215,3200);
-            using(var glow=new Pen(Color.FromArgb(45,0,0),20)) g.DrawPath(glow,path);
-            using(var glow=new Pen(Color.FromArgb(105,0,0),10)) g.DrawPath(glow,path);
-            using(var ink=new Pen(Color.FromArgb(220,12,8),4)) g.DrawPath(ink,path);
-            dst.Save(output,ImageFormat.Png);
-        }
-    }
     public static void Star(string output) {
         using(var dst=new Bitmap(512,512)) {
             for(int y=0;y<512;y++) for(int x=0;x<512;x++) {
@@ -146,6 +136,6 @@ public static class CreditsArt {
 [CreditsArt]::Title((Join-Path $destination '3d gfx.png'),'3d Gfx','quiesce')
 [CreditsArt]::Title((Join-Path $destination '2d gfx.png'),'2d Gfx','sybex')
 [CreditsArt]::Title((Join-Path $destination 'music.png'),'Music',([string][char]0x00a2+'at'))
-[CreditsArt]::Ending((Join-Path $destination 'end.png'))
+& (Join-Path $PSScriptRoot 'generate_credits_end.ps1')
 [CreditsArt]::Star((Join-Path $destination 'star.png'))
 [CreditsArt]::Chrome($destination)
