@@ -39,7 +39,7 @@ int runWindow(Display* display)
         if (!preview::load()) {
             preview::releaseTextures();
             glXMakeCurrent(display, None, nullptr); glXDestroyContext(display, context); XDestroyWindow(display, window); XFreeColormap(display, settings.colormap);
-            return reportError("Could not initialize EggplantScene.");
+            return reportError("Could not initialize ACT3 scenes or soundtrack.");
         }
         const Atom protocols = XInternAtom(display, "WM_PROTOCOLS", False);
         Atom close = XInternAtom(display, "WM_DELETE_WINDOW", False);
@@ -55,6 +55,7 @@ int runWindow(Display* display)
                 if (poll(&connection, 1, 16) <= 0) {
                     preview::draw(width, height);
                     glXSwapBuffers(display, window);
+                    if (preview::finished()) running = false;
                     continue;
                 }
             }
@@ -68,6 +69,7 @@ int runWindow(Display* display)
             case Expose:
                 preview::draw(width, height);
                 glXSwapBuffers(display, window);
+                if (preview::finished()) running = false;
                 break;
             case KeyPress:
                 running = XLookupKeysym(&event.xkey, 0) != XK_Escape;
@@ -101,6 +103,7 @@ int runWindow(Display* display)
 
 int main(int argc, char** argv)
 {
+    if (argc == 1) preview::selectOption("--extra");
     for (int i = 1; i < argc; ++i)
         preview::selectOption(argv[i]);
     Display* display = XOpenDisplay(nullptr);

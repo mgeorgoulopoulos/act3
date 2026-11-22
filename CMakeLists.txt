@@ -16,6 +16,12 @@ else()
 endif()
 
 target_compile_features(act3 PRIVATE cxx_std_17)
+target_sources(act3 PRIVATE recreated/music.cpp recreated/full_demo.cpp)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(Threads REQUIRED)
+    target_link_libraries(act3 PRIVATE Threads::Threads ${CMAKE_DL_LIBS} m)
+endif()
+set_property(TARGET act3 PROPERTY VS_DEBUGGER_COMMAND_ARGUMENTS "--demo --extra")
 target_sources(act3 PRIVATE recreated/mesh_preview.cpp compatibility/d3d9/indexed_draw.cpp
     extra/eggplant_camera.cpp extra/color_grade.cpp)
 target_compile_definitions(act3 PRIVATE ACT3_OPENGL)
@@ -232,6 +238,7 @@ using namespace d3d9;
 #include "extra/space_engraving.h"
 #include "extra/space_overlays.h"
 #include "extra/mode.h"
+#include "recreated/full_demo.h"
 static void SetTransition(bool) {}
 ]=] space_code "${space_code}")
 string(REPLACE "for (fuel=0;" "for (int fuel=0;" space_code "${space_code}")
@@ -239,7 +246,7 @@ string(REPLACE "m_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );"
     "extra::applySpaceCamera(*m_pd3dDevice, m_dwTime, matProj);\n\tm_pd3dDevice->SetTransform( D3DTS_PROJECTION, &matProj );" space_code "${space_code}")
 string(REPLACE "if (m_dwTime > FIRE_BEGIN)" "if (extra::enabled || m_dwTime > FIRE_BEGIN)" space_code "${space_code}")
 foreach(condition "m_dwTime > TRANSITION_BEGIN")
-    string(REPLACE "if (${condition})" "if (!extra::enabled && (${condition}))" space_code "${space_code}")
+    string(REPLACE "if (${condition})" "if (!extra::enabled && !preview::fullDemoActive && (${condition}))" space_code "${space_code}")
 endforeach()
 
 string(REPLACE "Sympan.Render(m_pd3dDevice);" "if (!extra::drawSpaceStars(*m_pd3dDevice, Sympan)) Sympan.Render(m_pd3dDevice);" space_code "${space_code}")
@@ -270,3 +277,4 @@ configure_file(extra/textures/lex.png assets/extra/textures/lex.png COPYONLY)
 foreach(face RANGE 0 5)
     configure_file("extra/textures/space-cube-${face}.png" "assets/extra/textures/space-cube-${face}.png" COPYONLY)
 endforeach()
+configure_file("${ACT3_GEOMETRY_DIR}/../Universus.mp3" "assets/data/Universus.mp3" COPYONLY)

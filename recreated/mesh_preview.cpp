@@ -2,6 +2,8 @@
 #include "blob_preview.h"
 #include "space_preview.h"
 #include "credits_preview.h"
+#include "full_demo.h"
+#include "music.h"
 #include "shadow_preview.h"
 #include "shadow_blur.h"
 #include "../extra/shadow_focus.h"
@@ -33,6 +35,7 @@ std::chrono::steady_clock::time_point playbackStart;
 bool spaceSelected = false;
 bool creditsSelected = false;
 bool blobSelected = false;
+bool fullSelected = true, originalRequested = false, demoFinished = false;
 constexpr unsigned blobDuration = 19300;
 constexpr unsigned shadowDuration = 56000;
 constexpr unsigned eggplantDuration = 40000;
@@ -44,21 +47,34 @@ void preview::selectOption(std::string_view argument)
 {
     if (argument == "--extra")
         extra::enabled = true;
+    else if (argument == "--original") {
+        originalRequested = true;
+        extra::enabled = false;
+    } else if (argument == "--demo") {
+        fullSelected = true;
+        if (!originalRequested) extra::enabled = true;
+        spaceSelected = creditsSelected = blobSelected = shadowSelected = sequenceSelected = false;
+    }
     else if (argument == "--credits") {
+        fullSelected = false;
         creditsSelected = true;
         spaceSelected = blobSelected = shadowSelected = sequenceSelected = false;
     }
     else if (argument == "--space") {
+        fullSelected = false;
         spaceSelected = true;
         blobSelected = shadowSelected = sequenceSelected = false;
     } else if (argument == "--blob") {
+        fullSelected = false;
         blobSelected = true;
         shadowSelected = sequenceSelected = false;
     } else if (argument == "--shadow") {
+        fullSelected = false;
         blobSelected = false;
         shadowSelected = true;
         sequenceSelected = false;
     } else if (argument == "--sequence") {
+        fullSelected = false;
         blobSelected = false;
         sequenceSelected = true;
         shadowSelected = false;
@@ -67,6 +83,7 @@ void preview::selectOption(std::string_view argument)
 
 const char* preview::windowTitle()
 {
+    if (fullSelected) return "ACT3 | Full Demo + Music";
     if (creditsSelected) return "ACT3 | Credits";
     if (spaceSelected) return "ACT3 | Space";
     if (blobSelected)
@@ -80,6 +97,7 @@ const char* preview::windowTitle()
 
 bool preview::load()
 {
+    if (fullSelected && !originalRequested) extra::enabled = true;
     namespace fs = std::filesystem;
     std::error_code error;
     const auto previous = fs::current_path(error);
@@ -88,6 +106,11 @@ bool preview::load()
     fs::current_path(ACT3_ASSET_ROOT, error);
     if (error)
         return false;
+    if (fullSelected) {
+        const bool loaded = loadFullDemo(device) && music::load("data/Universus.mp3");
+        fs::current_path(previous,error);
+        return loaded && !error;
+    }
     if (creditsSelected) {
         const bool loaded = loadCredits(device);
         fs::current_path(previous,error);
@@ -135,6 +158,17 @@ void preview::draw(int width, int height)
     extra::setEggplantViewport(width, height);
     glEnable(GL_NORMALIZE);
     glColor3f(1, 1, 1);
+    if (fullSelected) {
+        if (!music::start()) {
+            demoFinished = true;
+            return;
+        }
+        const auto time = music::milliseconds();
+        music::features();
+        drawFullDemo(device,width,height,static_cast<unsigned>(time));
+        demoFinished = time >= fullDemoDuration;
+        return;
+    }
     const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - playbackStart).count();
     if (creditsSelected) {
@@ -175,6 +209,11 @@ void preview::draw(int width, int height)
 
 void preview::releaseTextures()
 {
+    if (fullSelected) {
+        music::release();
+        releaseFullDemo();
+        return;
+    }
     if (creditsSelected) {
         extra::releaseColorGrade();
         releaseCredits();
@@ -202,3 +241,5 @@ void preview::releaseTextures()
     TexMan.Release();
     TexMan.pFirstEntry = nullptr;
 }
+
+bool preview::finished() { return demoFinished; }

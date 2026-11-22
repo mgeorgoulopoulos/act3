@@ -9,4 +9,5 @@ const char* windowTitle();
 bool load();
 void draw(int width, int height);
 void releaseTextures();
+bool finished();
 }

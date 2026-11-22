@@ -35,6 +35,7 @@ int reportError(const char* message)
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
 {
     std::istringstream options(args);
+    if (!*args) preview::selectOption("--extra");
     for (std::string option; options >> option;)
         preview::selectOption(option);
     SetProcessDPIAware();
@@ -88,7 +89,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
         if (!preview::load()) {
             preview::releaseTextures();
             wglMakeCurrent(nullptr, nullptr); wglDeleteContext(context); ReleaseDC(window, dc); DestroyWindow(window);
-            return reportError("Could not initialize EggplantScene.");
+            return reportError("Could not initialize ACT3 scenes or soundtrack.");
         }
         ShowWindow(window, showMode);
         SetTimer(window, 1, 16, nullptr);
@@ -103,6 +104,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
             GetClientRect(window, &client);
             preview::draw(client.right, client.bottom);
             SwapBuffers(dc);
+            if (preview::finished()) PostQuitMessage(0);
         }
         result = received == -1 ? 1 : static_cast<int>(message.wParam);
         KillTimer(window, 1);
