@@ -95,16 +95,22 @@ LRESULT CALLBACK proc(HWND window,UINT message,WPARAM wp,LPARAM lp){
     case WM_PAINT:{
         PAINTSTRUCT ps;HDC dc=BeginPaint(window,&ps);RECT all;GetClientRect(window,&all);auto b=CreateSolidBrush(bg);FillRect(dc,&all,b);DeleteObject(b);
         auto label=[&](int x,int y,int w,int h,HFONT font,COLORREF color,const wchar_t* value){RECT r{s->px(x),s->px(y),s->px(x+w),s->px(y+h)};text(dc,font,color,r,value);};
-        label(32,24,500,22,s->small,red,L"REVERSED ENGINEERS  /  2004");
-        label(116,49,450,76,s->logo,ink,L"ACT3");
+        RECT byline{s->px(32),s->px(24),all.right-s->px(32),s->px(46)};
+        text(dc,s->small,red,byline,L"REVERSED ENGINEERS  /  2004",DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+        SelectObject(dc,s->logo);SIZE titleSize{};GetTextExtentPoint32W(dc,L"ACT3",4,&titleSize);
+        BITMAP bitmap{};if(s->figure)GetObject(s->figure,sizeof(bitmap),&bitmap);
+        const int gap=s->figure?s->px(24):0;
+        const int left=(all.right-bitmap.bmWidth-gap-titleSize.cx)/2;
+        RECT title{left+bitmap.bmWidth+gap,s->px(49),all.right,s->px(125)};
+        text(dc,s->logo,ink,title,L"ACT3");
         if(s->figure){
             HDC source=CreateCompatibleDC(dc);auto old=SelectObject(source,s->figure);
-            BITMAP bitmap{};GetObject(s->figure,sizeof(bitmap),&bitmap);
             BLENDFUNCTION blend{AC_SRC_OVER,0,255,AC_SRC_ALPHA};
-            AlphaBlend(dc,s->px(32),s->px(45),bitmap.bmWidth,bitmap.bmHeight,source,0,0,bitmap.bmWidth,bitmap.bmHeight,blend);
+            AlphaBlend(dc,left,s->px(45),bitmap.bmWidth,bitmap.bmHeight,source,0,0,bitmap.bmWidth,bitmap.bmHeight,blend);
             SelectObject(source,old);DeleteDC(source);
         }
-        label(32,130,500,25,s->font,muted,L"All rights reversed. Ready when you are.");
+        RECT tagline{s->px(32),s->px(130),all.right-s->px(32),s->px(155)};
+        text(dc,s->font,muted,tagline,L"All rights reversed. Ready when you are.",DT_CENTER|DT_VCENTER|DT_SINGLELINE);
         label(32,177,500,20,s->small,muted,L"EDITION");
         label(32,294,240,20,s->small,muted,L"RESOLUTION");label(314,294,240,20,s->small,muted,L"DISPLAY");
         label(32,380,530,24,s->small,muted,extra::enabled?L"16:9  /  Black bars preserve the composition.":L"4:3  /  Black bars preserve the original composition.");
