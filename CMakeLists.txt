@@ -180,6 +180,7 @@ string(REPLACE "// Normalize normals" "extra::gradeGreetzBackground();\n\t// Nor
 string(REPLACE "pos.x = 150;" "extra::gradeGreetzSurface();\n\tpos.x = 150;" greetz_source "${greetz_source}")
 string(REPLACE "m1.Create(40,40,40," "m1.Create(extra::blobResolution(),extra::blobResolution(),extra::blobResolution()," greetz_source "${greetz_source}")
 string(PREPEND greetz_source "#include \"extra/blob_grid.h\"\n")
+string(REPLACE "Eggplant.3ds" "eggplant.3ds" greetz_source "${greetz_source}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp" "${greetz_source}")
 target_sources(act3 PRIVATE marching.cpp 3ds.cpp recreated/blob_preview.cpp extra/greetz_layout.cpp
     compatibility/d3d9/render_target.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp")

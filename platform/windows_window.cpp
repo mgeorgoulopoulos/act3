@@ -108,10 +108,14 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int showMode)
         RECT loading{};GetClientRect(window,&loading);
         preview::drawLoading(loading.right,loading.bottom);
         SwapBuffers(dc);glFinish();
-        if (!preview::load()) {
+        if (!preview::load(!options.checkScenes)) {
             preview::releaseTextures();
             wglMakeCurrent(nullptr, nullptr); wglDeleteContext(context); ReleaseDC(window, dc); DestroyWindow(window);
             return reportError("Could not initialize ACT3 scenes or soundtrack.");
+        }
+        if(options.checkScenes){
+            preview::releaseTextures();wglMakeCurrent(nullptr,nullptr);wglDeleteContext(context);
+            ReleaseDC(window,dc);DestroyWindow(window);std::puts("ACT3 scenes OK");return 0;
         }
         ShowWindow(window, showMode);
         SetTimer(window, 1, 16, nullptr);

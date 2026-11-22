@@ -66,10 +66,14 @@ int runWindow(Display* display,const platform::LaunchOptions& options)
         XStoreName(display,window,preview::windowTitle());
         XMapWindow(display,window);XSync(display,False);
         preview::drawLoading(width,height);glXSwapBuffers(display,window);glFinish();
-        if (!preview::load()) {
+        if (!preview::load(!options.checkScenes)) {
             preview::releaseTextures();
             glXMakeCurrent(display, None, nullptr); glXDestroyContext(display, context); XDestroyWindow(display, window); XFreeColormap(display, settings.colormap);
             return reportError("Could not initialize ACT3 scenes or soundtrack.");
+        }
+        if(options.checkScenes){
+            preview::releaseTextures();glXMakeCurrent(display,None,nullptr);glXDestroyContext(display,context);
+            XDestroyWindow(display,window);XFreeColormap(display,settings.colormap);std::puts("ACT3 scenes OK");return 0;
         }
         std::puts("  Ready. Enjoy ACT3.\n");
         const Atom protocols = XInternAtom(display, "WM_PROTOCOLS", False);

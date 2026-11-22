@@ -77,7 +77,8 @@ still need its historical platform dependencies; that does not apply to the new 
 - No FUSE or AppImage runtime requirement.
 
 CI checks the binary's required glibc symbols, missing dependencies, its version,
-and assets after relocation. The assembled archive is extracted and checked again
+and assets after relocation. Both editions also load all scenes under Xvfb/Mesa
+without audio or continuous playback, catching case-sensitive paths and resource failures. The assembled archive is extracted and checked again
 on a current Ubuntu runner. These checks do not substitute for visual/audio testing
 on real Linux hardware.
 

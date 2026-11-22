@@ -90,6 +90,8 @@ jobs:
             cmake --build build/linux-ci --parallel 2
             cmake --install build/linux-ci --prefix stage/linux
             python3 tools/bundle_linux.py stage/linux
+            xvfb-run -a /src/stage/linux/act3 --original --check-scenes --windowed --resolution=800x600
+            xvfb-run -a /src/stage/linux/act3 --extra --check-scenes --windowed --resolution=1280x720
             cd /tmp
             /src/stage/linux/act3 --version
             /src/stage/linux/act3 --check-assets

@@ -137,7 +137,8 @@ distros still needs real-machine testing; a native Wayland backend is not includ
 On Windows, add `--no-ui` to bypass the launcher. `--space`, `--shadow`, `--blob`,
 `--credits` and `--sequence` open development previews; soundtrack playback is
 provided by the full-demo path. `--verbose` enables resource diagnostics.
-`--version` reports the build version and `--check-assets` checks the portable bundle.
+`--version` reports the build version, `--check-assets` checks the portable bundle,
+and `--check-scenes` loads the scenes in OpenGL without starting audio or playback.
 **Escape exits playback.** Terminal color respects `NO_COLOR` and redirected output.
 
 Original assets are included in `assets/original/`; no adjacent archive checkout,

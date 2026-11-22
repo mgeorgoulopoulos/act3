@@ -98,7 +98,7 @@ const char* preview::windowTitle()
     return extra::enabled ? "ACT3 | Extra" : "ACT3 | OpenGL";
 }
 
-bool preview::load()
+bool preview::load(bool withAudio)
 {
     if (fullSelected && !originalRequested) extra::enabled = true;
     namespace fs = std::filesystem;
@@ -110,7 +110,7 @@ bool preview::load()
     if (error)
         return false;
     if (fullSelected) {
-        const bool loaded = loadFullDemo(device) && music::load("data/Universus.mp3");
+        const bool loaded = loadFullDemo(device) && (!withAudio || music::load("data/Universus.mp3"));
         fs::current_path(previous,error);
         return loaded && !error;
     }
