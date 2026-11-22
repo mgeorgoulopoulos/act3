@@ -23,6 +23,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(act3 PRIVATE Threads::Threads ${CMAKE_DL_LIBS} m)
 endif()
 set_property(TARGET act3 PROPERTY VS_DEBUGGER_COMMAND_ARGUMENTS "--demo --extra")
+set_property(TARGET act3 PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_sources(act3 PRIVATE recreated/mesh_preview.cpp compatibility/d3d9/indexed_draw.cpp
     extra/eggplant_camera.cpp extra/color_grade.cpp)
 target_compile_definitions(act3 PRIVATE ACT3_OPENGL)
