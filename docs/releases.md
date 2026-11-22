@@ -67,7 +67,7 @@ still need its historical platform dependencies; that does not apply to the new 
 
 - x86_64, built in Debian 11 with a **glibc 2.31** ABI ceiling.
 - GCC C++ and support runtimes linked statically.
-- libpng/zlib and stable XRandR helper libraries shipped in `linux/lib`, with
+- libpng/libjpeg/zlib and stable XRandR helper libraries shipped in `linux/lib`, with
   origin-relative runtime search paths and corresponding licenses.
 - libc, the loader, X11/XCB and graphics-driver libraries come from the desktop.
   Bundling those can conflict with the installed Mesa/NVIDIA stack.

@@ -6,7 +6,7 @@ import re
 import shutil
 import subprocess
 
-BUNDLED={'libpng16.so.16','libz.so.1','libXrandr.so.2','libXrender.so.1','libXext.so.6'}
+BUNDLED={'libjpeg.so.62','libpng16.so.16','libz.so.1','libXrandr.so.2','libXrender.so.1','libXext.so.6'}
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('prefix',type=Path);args=p.parse_args()
     binary=args.prefix/'act3';libraries=args.prefix/'linux/lib';licenses=args.prefix/'linux/licenses'
@@ -20,7 +20,7 @@ def main():
         subprocess.run(['patchelf','--set-rpath','$ORIGIN',str(target)],check=True)
         copied.add(soname)
     if not {'libpng16.so.16','libz.so.1','libXrandr.so.2'}.issubset(copied):raise RuntimeError('Missing expected helper libraries')
-    for package in ['libpng16-16','zlib1g','libxrandr2','libxrender1','libxext6','gcc-10-base']:
+    for package in ['libjpeg62-turbo','libpng16-16','zlib1g','libxrandr2','libxrender1','libxext6','gcc-10-base']:
         source=Path('/usr/share/doc')/package/'copyright'
         if not source.exists():raise RuntimeError('Missing license: '+str(source))
         shutil.copyfile(source,licenses/(package+'.txt'))

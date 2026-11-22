@@ -8,6 +8,6 @@ RUN printf '%s\n' \
     && apt-get -o Acquire::Check-Valid-Until=false update \
     && apt-get install -y --no-install-recommends \
     build-essential cmake python3 ca-certificates patchelf binutils \
-    libx11-dev libxrandr-dev libgl1-mesa-dev libpng-dev xvfb xauth \
+    libx11-dev libxrandr-dev libgl1-mesa-dev libpng-dev libjpeg62-turbo-dev xvfb xauth \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src

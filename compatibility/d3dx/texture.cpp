@@ -16,6 +16,7 @@
 #include <wrl/client.h>
 #else
 #include <png.h>
+#include "jpeg.h"
 #include <GL/glx.h>
 #define APIENTRY
 #endif
@@ -49,8 +50,9 @@ bool readImage(const std::string& path, unsigned& width, unsigned& height,
 #else
     png_image image{};
     image.version = PNG_IMAGE_VERSION;
-    if (!png_image_begin_read_from_file(&image, path.c_str()))
-        return false;
+    if (!png_image_begin_read_from_file(&image, path.c_str())){
+        png_image_free(&image);return readJpeg(path,width,height,pixels);
+    }
     width = image.width;
     height = image.height;
     image.format = PNG_FORMAT_RGBA;

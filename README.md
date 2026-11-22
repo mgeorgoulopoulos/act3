@@ -114,7 +114,7 @@ context is not the target of this restoration.
 On Debian/Ubuntu, the development dependencies are:
 
 ```sh
-sudo apt install build-essential cmake libx11-dev libxrandr-dev libglvnd-dev libpng-dev
+sudo apt install build-essential cmake libx11-dev libxrandr-dev libglvnd-dev libpng-dev libjpeg-dev
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ./build/act3
