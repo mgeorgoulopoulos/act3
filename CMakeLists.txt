@@ -87,6 +87,7 @@ string(REPLACE "NumVertices = 10000;" "NumVertices = extra::enabled ? 60000 : 10
 string(REPLACE "void MeshIso::Update()\n{" "void MeshIso::Update()\n{\n if (extra::enabled) extra::beginBlobGrid(*this);" blob_mesh "${blob_mesh}")
 string(REPLACE "bool MeshIso::IsCellCalculated(int x , int y , int z)\n{" "bool MeshIso::IsCellCalculated(int x , int y , int z)\n{\n if (extra::enabled) return extra::blobCellVisited(*this,x,y,z);" blob_mesh "${blob_mesh}")
 string(REPLACE "void MeshIso::AddCellToCalculated(int x , int y , int z)\n{" "void MeshIso::AddCellToCalculated(int x , int y , int z)\n{\n if (extra::enabled) { extra::visitBlobCell(*this,x,y,z); return; }" blob_mesh "${blob_mesh}")
+string(REPLACE "unsigned short vertex_index=0" "std::uint32_t vertex_index=0" blob_mesh "${blob_mesh}")
 target_sources(act3 PRIVATE extra/blob_grid.cpp)
 
 extract_model_method(greetz_grid "int MeshGrid::CreateBuffers(" "int MeshGrid::VortexRectangle(")

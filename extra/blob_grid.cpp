@@ -12,7 +12,7 @@ size_t index(const MeshIso& m,int x,int y,int z) {
     return size_t(x)+size_t(m.xCells+1)*(y+size_t(m.yCells+1)*z);
 }
 }
-int extra::blobResolution() { return enabled ? 48 : 40; }
+int extra::blobResolution() { return enabled ? 96 : 40; }
 void extra::beginBlobGrid(const MeshIso& m) {
     visited.assign(size_t(m.xCells+1)*(m.yCells+1)*(m.zCells+1),0);
 }
