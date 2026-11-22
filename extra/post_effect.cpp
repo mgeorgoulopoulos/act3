@@ -60,7 +60,16 @@ bool initialize()
 uniform sampler2D scene;
 uniform float intensity,seconds;
 uniform vec2 texel;
-float noise(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+float noise(vec2 p) {
+    vec3 h=fract(p.xyx*0.1031);
+    h+=dot(h,h.yzx+33.33);
+    return fract((h.x+h.y)*h.z);
+}
+float clump(vec2 p) {
+    vec2 cell=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+    return mix(mix(noise(cell),noise(cell+vec2(1.0,0.0)),f.x),
+        mix(noise(cell+vec2(0.0,1.0)),noise(cell+vec2(1.0,1.0)),f.x),f.y);
+}
 vec3 light(vec2 p) {
     vec3 c=texture2D(scene,clamp(p,vec2(0.0),vec2(1.0))).rgb;
     return c*smoothstep(0.55,0.98,max(c.r,max(c.g,c.b)));
@@ -74,20 +83,26 @@ void main() {
     float weave=sin(uv.y*52.0+seconds*2.7)*0.0014;
     float tear=(noise(vec2(scan,floor(seconds*9.0)))-0.5)*0.009;
     vec2 warped=clamp(uv+vec2((weave+tear)*damage,0.0),vec2(0.0),vec2(1.0));
-    vec2 offset=(uv-0.5)*vec2(0.030,0.012)*damage+texel*high*0.7;
+    vec2 offset=(uv-0.5)*vec2(0.010,0.004)*damage+texel*high*0.233333;
     vec3 color=vec3(texture2D(scene,clamp(warped+offset,0.0,1.0)).r,
         texture2D(scene,warped).g,texture2D(scene,clamp(warped-offset,0.0,1.0)).b);
-    vec2 radius=texel*mix(1.5,24.0,damage);
+    vec2 radius=texel*mix(1.5,30.0,damage);
     vec3 halo=(light(uv+vec2(radius.x,0.0))+light(uv-vec2(radius.x,0.0))+
         light(uv+vec2(0.0,radius.y))+light(uv-vec2(0.0,radius.y)))*0.25;
-    color+=max(halo-original*0.45,vec3(0.0))*vec3(0.44,0.13,0.08)*damage;
+    color+=max(halo-original*0.45,vec3(0.0))*vec3(0.80,0.25,0.14)*damage;
     float luminance=dot(original,vec3(0.2126,0.7152,0.0722));
-    float grain=noise(floor(gl_FragCoord.xy)+floor(seconds*24.0)*vec2(17.0,53.0))-0.5;
-    color+=grain*(0.018*intensity+0.30*damage)*(0.16+sqrt(max(luminance,0.0)));
-    float scanline=sin(gl_FragCoord.y*3.14159265);
-    color*=1.0-damage*(0.08+0.07*scanline);
+    vec2 filmPixel=uv/texel;
+    vec2 seed=mod(floor(seconds*24.0)*vec2(17.0,53.0),vec2(113.0,197.0));
+    float fine=noise(floor(filmPixel)+seed)-0.5;
+    float grain=0.70*(clump(filmPixel/3.2+seed)-0.5)+0.30*fine;
+    // Coarse silver-grain clumps remain visible at normal screenshot size.
+    color+=grain*(0.018*intensity+0.95*damage)*(0.20+sqrt(max(luminance,0.0)));
+    float dust=step(0.9975,noise(floor(filmPixel/1.6)+seed*1.7));
+    color+=dust*0.22*damage;
+    float exposure=0.04*sin(uv.y*8.0+seconds*0.3)+0.025*cos(uv.x*11.0-seconds*0.2);
+    color*=1.0+damage*exposure;
     float edge=dot(uv-0.5,uv-0.5);
-    color*=1.0-0.68*damage*edge;
+    color*=1.0-1.05*damage*edge;
     color=mix(color,pow(max(color,0.0),vec3(0.88,1.04,1.10)),damage*0.65);
     color+=vec3(0.025,0.004,0.012)*damage;
     gl_FragColor=vec4(clamp(color,0.0,1.0),1.0);
