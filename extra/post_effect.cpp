@@ -65,11 +65,6 @@ float noise(vec2 p) {
     h+=dot(h,h.yzx+33.33);
     return fract((h.x+h.y)*h.z);
 }
-float clump(vec2 p) {
-    vec2 cell=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
-    return mix(mix(noise(cell),noise(cell+vec2(1.0,0.0)),f.x),
-        mix(noise(cell+vec2(0.0,1.0)),noise(cell+vec2(1.0,1.0)),f.x),f.y);
-}
 vec3 light(vec2 p) {
     vec3 c=texture2D(scene,clamp(p,vec2(0.0),vec2(1.0))).rgb;
     return c*smoothstep(0.55,0.98,max(c.r,max(c.g,c.b)));
@@ -93,18 +88,22 @@ void main() {
     float luminance=dot(original,vec3(0.2126,0.7152,0.0722));
     vec2 filmPixel=uv/texel;
     vec2 seed=mod(floor(seconds*24.0)*vec2(17.0,53.0),vec2(113.0,197.0));
-    float fine=noise(floor(filmPixel)+seed)-0.5;
-    float grain=0.70*(clump(filmPixel/3.2+seed)-0.5)+0.30*fine;
-    // Coarse silver-grain clumps remain visible at normal screenshot size.
-    color+=grain*(0.018*intensity+0.95*damage)*(0.20+sqrt(max(luminance,0.0)));
-    float dust=step(0.9975,noise(floor(filmPixel/1.6)+seed*1.7));
-    color+=dust*0.22*damage;
+    vec2 pixel=floor(filmPixel);
+    // Independent one-pixel grains, with a soft distribution rather than coarse cells.
+    float grain=(noise(pixel+seed)+noise(pixel.yx+seed.yx+19.7)+
+        noise(pixel+seed+vec2(63.1,37.8)))/3.0-0.5;
+    color+=grain*(0.018*intensity+0.15*damage)*(0.25+sqrt(max(luminance,0.0)));
+    // Sparse, fine exposure fluctuations also catch light in originally dark pixels.
+    float photon=pow(noise(pixel+seed+91.3),12.0);
+    float shadow=1.0-smoothstep(0.02,0.40,luminance);
+    color+=vec3(0.95,0.97,1.0)*photon*0.085*damage*shadow;
+    vec2 scatter=vec2(noise(pixel+seed+7.1),noise(pixel.yx+seed+41.9))-0.5;
+    color+=light(uv+scatter*texel*32.0)*0.055*damage;
     float exposure=0.04*sin(uv.y*8.0+seconds*0.3)+0.025*cos(uv.x*11.0-seconds*0.2);
     color*=1.0+damage*exposure;
     float edge=dot(uv-0.5,uv-0.5);
     color*=1.0-1.05*damage*edge;
     color=mix(color,pow(max(color,0.0),vec3(0.88,1.04,1.10)),damage*0.65);
-    color+=vec3(0.025,0.004,0.012)*damage;
     gl_FragColor=vec4(clamp(color,0.0,1.0),1.0);
 }
 )";
