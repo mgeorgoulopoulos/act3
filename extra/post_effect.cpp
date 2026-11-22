@@ -1,4 +1,5 @@
 #include "post_effect.h"
+#include "dramatometer.h"
 #include "mode.h"
 #include "shadow_camera.h"
 #include "../recreated/music.h"
@@ -134,12 +135,13 @@ float extra::dramaAt(unsigned time)
 }
 float extra::postIntensity(unsigned time)
 {
-    if(!enabled)return 0;
+    if(!enabled || !dramatometerActive())return 0;
     const float base=std::max(0.10f,dramaAt(time));
     return std::clamp(base*(0.82f+0.28f*music::features().orchestralPulse),0.10f,1.5f);
 }
 void extra::postProcess(int width,int height,unsigned time)
 {
+    if (!dramatometerActive()) return;
     const float base=std::max(0.10f,dramaAt(time));
     if (!enabled || base<=0) return;
     if (!attempted) {

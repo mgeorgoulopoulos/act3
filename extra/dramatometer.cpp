@@ -53,6 +53,8 @@ void text(float x,float y,const char* label,float size)
     }
 }
 }
+bool extra::dramatometerActive() { return visible; }
+
 void extra::dramatometerKey(bool control,bool isD,bool pressed)
 {
     if(!control){presses=0;held=false;return;}
