@@ -2,7 +2,7 @@
 # Run from any directory with PowerShell 7 and System.Drawing.
 Add-Type -AssemblyName System.Drawing
 $destination = Join-Path $PSScriptRoot 'Credits'
-$original = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../archived/distribution/ACT3/data/textures'))
+$original = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../assets/original/textures'))
 $null = New-Item -ItemType Directory -Force -Path $destination
 $ErrorActionPreference = 'Stop'
 Add-Type -ReferencedAssemblies System.Drawing.Common,System.Drawing.Primitives,System.Collections,System.Runtime,System.Private.Windows.GdiPlus,System.Private.Windows.Core -TypeDefinition @'

@@ -5,7 +5,7 @@
 #include "credits_preview.h"
 #include "shadow_blur.h"
 #include "scene_host.h"
-#include "../EggplantScene.h"
+#include "eggplant_scene.h"
 #include "extra/color_grade.h"
 #include "extra/shadow_focus.h"
 #include "extra/credits.h"

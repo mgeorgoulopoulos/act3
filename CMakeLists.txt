@@ -34,7 +34,15 @@ set_property(TARGET act3 PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT
 target_sources(act3 PRIVATE recreated/mesh_preview.cpp compatibility/d3d9/indexed_draw.cpp
     extra/eggplant_camera.cpp extra/color_grade.cpp)
 target_compile_definitions(act3 PRIVATE ACT3_OPENGL)
-target_sources(act3 PRIVATE EggplantScene.cpp recreated/scene_host.cpp Frustum.cpp compatibility/d3dx/geometry.cpp)
+# Adapt the historical header in the build tree, keeping the source snapshot untouched.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS EggplantScene.cpp EggplantScene.h)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/EggplantScene.h" eggplant_header)
+string(REPLACE "#include \"DemoEngine.h\"" "#include \"recreated/scene_host.h\"" eggplant_header "${eggplant_header}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/eggplant_scene.h" "${eggplant_header}")
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/EggplantScene.cpp" eggplant_source)
+string(REPLACE "#include \"EggplantScene.h\"" "#include \"eggplant_scene.h\"" eggplant_source "${eggplant_source}")
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/eggplant_scene.cpp" "${eggplant_source}")
+target_sources(act3 PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/eggplant_scene.cpp" recreated/scene_host.cpp Frustum.cpp compatibility/d3dx/geometry.cpp)
 # Build the original entry points until the remaining model.cpp methods can
 # compile against the compatibility layer.
 set(model_source "${CMAKE_CURRENT_SOURCE_DIR}/model.cpp")
@@ -172,7 +180,7 @@ target_sources(act3 PRIVATE TextureManager.cpp compatibility/d3dx/texture.cpp
     "${CMAKE_CURRENT_BINARY_DIR}/generated/model_renderer.cpp")
 target_include_directories(act3 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_BINARY_DIR}/generated")
-set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../archived/distribution/ACT3/data/geometry"
+set(ACT3_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets/original/geometry"
     CACHE PATH "Directory containing the original ACT3 geometry")
 target_include_directories(act3 PRIVATE compatibility/d3dx)
 foreach(asset test.s3d c_room.s3d plants.cam shadow.s3d room.s3d shadow.cam eggplant.3ds)
@@ -218,7 +226,7 @@ foreach(asset IN LISTS credits_art)
     get_filename_component(folder "${folder}" NAME)
     configure_file("${asset}" "assets/textures/${folder}/${name}" COPYONLY)
 endforeach()
-foreach(asset circuit.png metal.dds chrome.dds dna.png star.png lens1.png lens2.png lens3.png lens4.png room_sna.png)
+foreach(asset circuit.png metal.dds chrome.dds star.png lens1.png lens2.png lens3.png lens4.png room_sna.png)
     configure_file("${ACT3_GEOMETRY_DIR}/../textures/${asset}" "assets/textures/${asset}" COPYONLY)
 endforeach()
 target_compile_definitions(act3 PRIVATE ACT3_ASSET_ROOT="${CMAKE_CURRENT_BINARY_DIR}/assets"
@@ -245,8 +253,8 @@ endforeach()
 
 configure_file(extra/luts/greetz.png assets/textures/greetz-grade.png COPYONLY)
 configure_file(extra/luts/greetz-background.png assets/textures/greetz-background-grade.png COPYONLY)
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS SpaceScene.cpp SpaceScene.h)
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/SpaceScene.h" space_header)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS SpaceScene.cpp Spacescene.h)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/Spacescene.h" space_header)
 string(REPLACE [=[#include "DemoEngine.h"]=] [=[#include "recreated/scene_host.h"
 #include "camera.h"]=] space_header "${space_header}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/space_scene.h" "${space_header}")
@@ -301,3 +309,5 @@ foreach(face RANGE 0 5)
 endforeach()
 configure_file("${ACT3_GEOMETRY_DIR}/../Universus.mp3" "assets/data/Universus.mp3" COPYONLY)
 configure_file("${ACT3_GEOMETRY_DIR}/../textures/loading.png" "assets/textures/loading.png" COPYONLY)
+
+configure_file("${ACT3_GEOMETRY_DIR}/../textures/dna.PNG" "assets/textures/dna.png" COPYONLY)

@@ -1,1 +1,14 @@
 /build/
+/out/
+/.vs/
+*.user
+*.suo
+*.pdb
+*.obj
+*.ilk
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store
+.env
+.env.*

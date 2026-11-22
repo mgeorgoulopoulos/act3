@@ -20,7 +20,7 @@
 #ifdef ZeroMemory
 #undef ZeroMemory
 #endif
-#include "../EggplantScene.h"
+#include "eggplant_scene.h"
 #include <chrono>
 #include <filesystem>
 #include <cstdlib>
