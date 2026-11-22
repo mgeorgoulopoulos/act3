@@ -24,8 +24,9 @@ Scene1 eggplants{};
 DemoEngine host{};
 TextureEntry* textures[5]{};
 bool loaded[5]{};
-GLuint spaceFrame{};
-int frameWidth{},frameHeight{};
+struct Capture { GLuint texture{}; int width{},height{}; };
+Capture spaceFrame,shadowFrame;
+MeshGrid transitionGrid{};
 
 void select(unsigned scene)
 {
@@ -35,24 +36,25 @@ void select(unsigned scene)
 void shadow(d3d9::Device& device,int width,int height,unsigned time)
 {
     select(1);
+    device.SetRenderState(d3d9::D3DRS_ZWRITEENABLE,TRUE);
     device.SetProjectionHorizontalScale(extra::enabled ? 4.f*height/(3.f*width) : 1);
     preview::drawShadow(device,time);
     device.SetProjectionHorizontalScale(1);
     extra::applyColorGrade(width,height,extra::SceneGrade::Shadow,time);
     extra::postProcessShadow(width,height,time);
 }
-void saveSpace(int width,int height)
+void saveFrame(Capture& image,int width,int height)
 {
-    if (!spaceFrame) glGenTextures(1,&spaceFrame);
+    if (!image.texture) glGenTextures(1,&image.texture);
     glPushAttrib(GL_TEXTURE_BIT);
-    glBindTexture(GL_TEXTURE_2D,spaceFrame);
-    if (width!=frameWidth || height!=frameHeight) {
+    glBindTexture(GL_TEXTURE_2D,image.texture);
+    if (width!=image.width || height!=image.height) {
         glCopyTexImage2D(GL_TEXTURE_2D,0,GL_RGB8,0,0,width,height,0);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,0x812f);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,0x812f);
-        frameWidth=width; frameHeight=height;
+        image.width=width; image.height=height;
     } else glCopyTexSubImage2D(GL_TEXTURE_2D,0,0,0,0,0,width,height);
     glPopAttrib();
 }
@@ -62,7 +64,7 @@ void blendSpace(d3d9::Device& device,float alpha)
     glPushAttrib(GL_ENABLE_BIT|GL_TEXTURE_BIT|GL_COLOR_BUFFER_BIT|GL_CURRENT_BIT|GL_TRANSFORM_BIT);
     glDisable(GL_LIGHTING); glDisable(GL_DEPTH_TEST); glDisable(GL_CULL_FACE);
     glDisable(GL_TEXTURE_GEN_S); glDisable(GL_TEXTURE_GEN_T); glDisable(GL_TEXTURE_GEN_R);
-    glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D,spaceFrame);
+    glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D,spaceFrame.texture);
     glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
     glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
     glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
@@ -73,6 +75,39 @@ void blendSpace(d3d9::Device& device,float alpha)
     glTexCoord2f(1,1); glVertex2f(1,1); glTexCoord2f(0,1); glVertex2f(-1,1);
     glEnd();
     glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix(); glPopAttrib();
+}
+void swirlShadow(d3d9::Device& device,int width,int height,float phase)
+{
+    device.SetTexture(1,nullptr); device.SetTexture(0,nullptr);
+    device.SetRenderState(d3d9::D3DRS_LIGHTING,FALSE);
+    device.SetRenderState(d3d9::D3DRS_ZENABLE,FALSE);
+    device.SetRenderState(d3d9::D3DRS_ZWRITEENABLE,FALSE);
+    device.SetRenderState(d3d9::D3DRS_CULLMODE,d3d9::D3DCULL_NONE);
+    device.SetRenderState(d3d9::D3DRS_ALPHABLENDENABLE,TRUE);
+    device.SetRenderState(d3d9::D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
+    device.SetRenderState(d3d9::D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+    device.SetTextureStageState(0,d3d9::D3DTSS_TEXCOORDINDEX,0);
+    glEnable(GL_TEXTURE_2D); glBindTexture(GL_TEXTURE_2D,shadowFrame.texture);
+    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+    d3d9::Matrix identity,projection;
+    const float aspect=float(width)/height;
+    D3DXMatrixPerspectiveFovLH(&projection,D3DX_PI/4,aspect,1,10000);
+    device.SetTransform(d3d9::D3DTS_VIEW,&identity);
+    device.SetTransform(d3d9::D3DTS_PROJECTION,&projection);
+    transitionGrid.ClearTransform();
+    transitionGrid.SetTransform(TRANSFORM_TRANSLATE,0,0,11);
+    transitionGrid.SetTransform(TRANSFORM_SCALE,aspect/(4.f/3.f),1,1);
+    const unsigned value=static_cast<unsigned>(255*phase);
+    transitionGrid.ApplyColor((value<<24)|(value<<16)|(value<<8)|value);
+    // The original 32x32 grid, amplitude, interpolation and UV arithmetic.
+    transitionGrid.VortexRectangle(1.5f*(1-phase));
+    glMatrixMode(GL_TEXTURE);glPushMatrix();glLoadIdentity();
+    glTranslatef(0,1,0);glScalef(1,-1,1); // Copied GL framebuffers have bottom-up UVs.
+    transitionGrid.Render(&device);
+    device.SetRenderState(d3d9::D3DRS_ZWRITEENABLE,TRUE);
+    glMatrixMode(GL_TEXTURE);glPopMatrix();glMatrixMode(GL_MODELVIEW);
 }
 }
 
@@ -98,6 +133,9 @@ bool preview::loadFullDemo(d3d9::Device& device)
         if (!ready) return false;
     }
     TexMan.pFirstEntry=nullptr; extra::creditsActive=false;
+    transitionGrid.CreateRectangle(32,32,14,14*3/4);
+    transitionGrid.CreateBuffers(&device);
+    transitionGrid.RefreshBuffers();
     return true;
 }
 void preview::drawFullDemo(d3d9::Device& device,int width,int height,unsigned time)
@@ -105,9 +143,11 @@ void preview::drawFullDemo(d3d9::Device& device,int width,int height,unsigned ti
     if (time<70000) {
         select(0); drawSpace(time);
         if (time>=69000) {
-            saveSpace(width,height);
+            saveFrame(spaceFrame,width,height);
             shadow(device,width,height,time-69000);
-            blendSpace(device,1-(time-69000)/1000.f);
+            saveFrame(shadowFrame,width,height);
+            blendSpace(device,1);
+            swirlShadow(device,width,height,(time-69000)/1000.f);
         }
     } else if (time<126000) shadow(device,width,height,time-70000);
     else if (time<166000) {
@@ -140,6 +180,8 @@ void preview::releaseFullDemo()
     }
     extra::releaseColorGrade(); recreated::releaseShadowBlur(); extra::releaseShadowFocus();
     extra::releasePostProcess();
-    glDeleteTextures(1,&spaceFrame); spaceFrame=0; frameWidth=frameHeight=0;
+    glDeleteTextures(1,&spaceFrame.texture);glDeleteTextures(1,&shadowFrame.texture);
+    spaceFrame={};shadowFrame={};
+    if(transitionGrid.pVB) transitionGrid.Release();
     extra::creditsActive=false; fullDemoActive=false;
 }
