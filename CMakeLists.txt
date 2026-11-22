@@ -82,6 +82,13 @@ extract_model_method(scene_transform "void Scene3DS::SetTransform(" "Particle::P
 extract_model_method(scene_release "void Scene3DS::Release(" "Mesh3DS* Scene3DS::GetObject(")
 extract_model_method(billboard "Particle::Particle()" "void MeshBillboard::CreateFrom(")
 extract_model_method(blob_mesh "int MeshIso::CreateBuffers(" "// *** MeshInCube")
+# Extra-only finer surface: preserve the original algorithm, with direct visited-cell lookup.
+string(REPLACE "NumVertices = 10000;" "NumVertices = extra::enabled ? 60000 : 10000;" blob_mesh "${blob_mesh}")
+string(REPLACE "void MeshIso::Update()\n{" "void MeshIso::Update()\n{\n if (extra::enabled) extra::beginBlobGrid(*this);" blob_mesh "${blob_mesh}")
+string(REPLACE "bool MeshIso::IsCellCalculated(int x , int y , int z)\n{" "bool MeshIso::IsCellCalculated(int x , int y , int z)\n{\n if (extra::enabled) return extra::blobCellVisited(*this,x,y,z);" blob_mesh "${blob_mesh}")
+string(REPLACE "void MeshIso::AddCellToCalculated(int x , int y , int z)\n{" "void MeshIso::AddCellToCalculated(int x , int y , int z)\n{\n if (extra::enabled) { extra::visitBlobCell(*this,x,y,z); return; }" blob_mesh "${blob_mesh}")
+target_sources(act3 PRIVATE extra/blob_grid.cpp)
+
 extract_model_method(greetz_grid "int MeshGrid::CreateBuffers(" "int MeshGrid::VortexRectangle(")
 extract_model_method(greetz_scroll "void MeshGrid::Scroll(" "int Material::LoadFrom3DS(")
 extract_model_method(blob_room "int	MeshInCube::Create(" "// ***************************
@@ -148,6 +155,8 @@ string(REPLACE "Asd.SetTransform(TRANSFORM_TRANSLATE ,"
     "extra::positionGreet(*m_pd3dDevice, Asd," greetz_source "${greetz_source}")
 string(REPLACE "// Normalize normals" "extra::gradeGreetzBackground();\n\t// Normalize normals" greetz_source "${greetz_source}")
 string(REPLACE "pos.x = 150;" "extra::gradeGreetzSurface();\n\tpos.x = 150;" greetz_source "${greetz_source}")
+string(REPLACE "m1.Create(40,40,40," "m1.Create(extra::blobResolution(),extra::blobResolution(),extra::blobResolution()," greetz_source "${greetz_source}")
+string(PREPEND greetz_source "#include \"extra/blob_grid.h\"\n")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp" "${greetz_source}")
 target_sources(act3 PRIVATE marching.cpp 3ds.cpp recreated/blob_preview.cpp extra/greetz_layout.cpp
     compatibility/d3d9/render_target.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp")
