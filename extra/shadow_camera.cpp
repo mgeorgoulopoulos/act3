@@ -2,6 +2,10 @@
 #include "mode.h"
 #include "shadow_cues.h"
 #include "../compatibility/d3d9/indexed_draw.h"
+#include <algorithm>
+#include <cmath>
+namespace { float closeup; }
+float extra::shadowCloseupStrength() { return closeup; }
 
 float extra::shadowDollyDistance(unsigned milliseconds)
 {
@@ -25,17 +29,23 @@ void extra::applyShadowCamera(d3d9::Device& device, unsigned milliseconds,
     projection._11 *= kick;
     projection._22 *= kick;
 
-    if (!distance)
-        return;
+    if (distance) {
+        // Keep the figure between the camera and the central star.
+        d3d9::Matrix view;
+        view._42 = 5;
+        view._43 = 300 + distance;
+        device.SetTransform(d3d9::D3DTS_VIEW, &view);
 
-    // Keep the figure between the camera and the central star.
+        // Projected size at the focal plane is proportional to focal length / distance.
+        const float zoom = distance / shadowDollyDistance(20000);
+        projection._11 *= zoom;
+        projection._22 *= zoom;
+    }
     d3d9::Matrix view;
-    view._42 = 5;
-    view._43 = 300 + distance;
-    device.SetTransform(d3d9::D3DTS_VIEW, &view);
-
-    // Projected size at the focal plane is proportional to focal length / distance.
-    const float zoom = distance / shadowDollyDistance(20000);
-    projection._11 *= zoom;
-    projection._22 *= zoom;
+    device.GetTransform(d3d9::D3DTS_VIEW,&view);
+    // The figure is centred at world z=-300. Use projected proximity, so the
+    // constant-size dolly zoom does not get mistaken for an actual close-up.
+    const float depth=std::max(1.f,std::abs(view._43-300*view._33));
+    const float proximity=std::clamp((projection._22/depth-0.0055f)/0.0035f,0.f,1.f);
+    closeup=proximity*proximity*(3-2*proximity);
 }

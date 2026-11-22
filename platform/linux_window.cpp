@@ -1,9 +1,12 @@
 #include <GL/glx.h>
 #include <X11/keysym.h>
+#include <X11/XKBlib.h>
 #include <cstdio>
+#include <cstring>
 #include <poll.h>
 #include "../recreated/mesh_preview.h"
 #include "../extra/mode.h"
+#include "../extra/dramatometer.h"
 
 namespace {
 int reportError(const char* message)
@@ -24,7 +27,16 @@ int runWindow(Display* display)
     const Window root = RootWindow(display, screen);
     XSetWindowAttributes settings{};
     settings.colormap = XCreateColormap(display, root, visual->visual, AllocNone);
-    settings.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
+    settings.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
+    Bool detectable=False;
+    XkbSetDetectableAutoRepeat(display,True,&detectable);
+    KeyCode physicalD=40;
+    if(auto keyboard=XkbGetMap(display,XkbAllClientInfoMask,XkbUseCoreKbd)) {
+        if(XkbGetNames(display,XkbKeyNamesMask,keyboard)==Success && keyboard->names && keyboard->names->keys)
+            for(int key=keyboard->min_key_code;key<=keyboard->max_key_code;++key)
+                if(std::memcmp(keyboard->names->keys[key].name,"AC03",4)==0) physicalD=static_cast<KeyCode>(key);
+        XkbFreeKeyboard(keyboard,XkbAllComponentsMask,True);
+    }
     int width = extra::enabled ? DisplayWidth(display, screen) * 2 / 3 : 800;
     int height = extra::enabled ? DisplayHeight(display, screen) * 2 / 3 : 600;
     const Window window = XCreateWindow(display, root, 0, 0, width, height, 0,
@@ -72,8 +84,15 @@ int runWindow(Display* display)
                 if (preview::finished()) running = false;
                 break;
             case KeyPress:
+                extra::dramatometerKey((event.xkey.state&ControlMask)!=0,
+                    event.xkey.keycode==physicalD,true);
                 running = XLookupKeysym(&event.xkey, 0) != XK_Escape;
                 break;
+            case KeyRelease: {
+                const auto key=XLookupKeysym(&event.xkey,0);
+                extra::dramatometerKey(key!=XK_Control_L && key!=XK_Control_R && (event.xkey.state&ControlMask)!=0,event.xkey.keycode==physicalD,false);
+                break;
+            }
             case ClientMessage:
                 if (event.xclient.message_type == protocols &&
                     event.xclient.format == 32 &&

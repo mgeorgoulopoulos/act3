@@ -1,5 +1,6 @@
 #include "post_effect.h"
 #include "mode.h"
+#include "shadow_camera.h"
 #include "../recreated/music.h"
 #include <algorithm>
 #include <cmath>
@@ -73,7 +74,7 @@ void main() {
     vec2 uv=gl_TexCoord[0].xy;
     vec3 original=texture2D(scene,uv).rgb;
     float high=smoothstep(0.5,1.0,intensity);
-    float damage=high*high;
+    float damage=high*high*(1.0+max(0.0,intensity-1.0));
     // Fixed 10:1 optical range: twice the previously approved 5-pixel freedom.
     // Output resolution affects sampling only, never the optical disturbance size.
     vec2 referenceSize=vec2(4000.0,4000.0*texel.x/texel.y);
@@ -126,10 +127,16 @@ void main() {
 float extra::dramaAt(unsigned time)
 {
     if (time<70000) return 0.4f*(1-ease(time,27000,35000));
-    if (time<126000) return 0.8f*(1-ease(time,124000,126000));
+    if (time<126000) return (0.8f+1.2f*shadowCloseupStrength())*(1-ease(time,124000,126000));
     if (time<166000) return 0;
     if (time<211050) return 1-0.8f*ease(time,209500,211050);
     return 0.2f*(1-ease(time,219000,221200));
+}
+float extra::postIntensity(unsigned time)
+{
+    if(!enabled)return 0;
+    const float base=std::max(0.10f,dramaAt(time));
+    return std::clamp(base*(0.82f+0.28f*music::features().orchestralPulse),0.10f,2.f);
 }
 void extra::postProcess(int width,int height,unsigned time)
 {
@@ -140,8 +147,7 @@ void extra::postProcess(int width,int height,unsigned time)
         if (!initialize()) { releasePostProcess(); attempted=true; std::fputs("ACT3: Film post effect unavailable\n",stderr); }
     }
     if (!frame) return;
-    const float pulse=music::features().orchestralPulse;
-    const float intensity=std::clamp(base*(0.82f+0.28f*pulse),0.10f,1.f);
+    const float intensity=postIntensity(time);
     glPushAttrib(GL_ENABLE_BIT|GL_TEXTURE_BIT|GL_COLOR_BUFFER_BIT|GL_CURRENT_BIT|GL_TRANSFORM_BIT);
     glBindTexture(GL_TEXTURE_2D,frame);
     if (frameWidth!=width||frameHeight!=height) {

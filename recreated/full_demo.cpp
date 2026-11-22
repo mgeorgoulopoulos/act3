@@ -10,6 +10,7 @@
 #include "extra/shadow_focus.h"
 #include "extra/credits.h"
 #include "extra/post_effect.h"
+#include "extra/dramatometer.h"
 #include <cstdlib>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -159,6 +160,7 @@ void preview::drawFullDemo(d3d9::Device& device,int width,int height,unsigned ti
         select(4); drawCredits(device,width,height,time-185300);
     } else device.Clear(0,nullptr,1,0xff000000,1,0);
     extra::postProcess(width,height,time);
+    extra::drawDramatometer(width,height,time);
 }
 void preview::releaseFullDemo()
 {

@@ -3,6 +3,7 @@
 #include <GL/gl.h>
 #include "../recreated/mesh_preview.h"
 #include "../extra/mode.h"
+#include "../extra/dramatometer.h"
 #include <sstream>
 
 namespace {
@@ -12,11 +13,18 @@ constexpr char windowTitle[] = "ACT3 | OpenGL";
 LRESULT CALLBACK windowProc(HWND window, UINT message, WPARAM key, LPARAM data)
 {
     switch (message) {
+    case WM_KILLFOCUS:
+        extra::dramatometerKey(false,false,false);
+        break;
     case WM_KEYDOWN:
+        extra::dramatometerKey((GetKeyState(VK_CONTROL)&0x8000)!=0,((data>>16)&0xff)==0x20,true);
         if (key == VK_ESCAPE) {
             PostQuitMessage(0);
             return 0;
         }
+        break;
+    case WM_KEYUP:
+        extra::dramatometerKey((GetKeyState(VK_CONTROL)&0x8000)!=0,((data>>16)&0xff)==0x20,false);
         break;
     case WM_CLOSE:
         PostQuitMessage(0);
