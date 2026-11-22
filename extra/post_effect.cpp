@@ -74,19 +74,23 @@ void main() {
     vec3 original=texture2D(scene,uv).rgb;
     float high=smoothstep(0.5,1.0,intensity);
     float damage=high*high;
+    // Fixed 5:1 reference: one historical 800-wide pixel is five virtual pixels.
+    // Output resolution affects sampling only, never the optical disturbance size.
+    vec2 referenceSize=vec2(4000.0,4000.0*texel.x/texel.y);
+    vec2 referencePixel=1.0/referenceSize;
     float scan=floor(uv.y*180.0);
-    float weave=sin(uv.y*52.0+seconds*2.7)*0.0014;
-    float tear=(noise(vec2(scan,floor(seconds*9.0)))-0.5)*0.009;
-    vec2 warped=clamp(uv+vec2((weave+tear)*damage,0.0),vec2(0.0),vec2(1.0));
-    vec2 offset=(uv-0.5)*vec2(0.010,0.004)*damage+texel*high*0.233333;
+    float weave=sin(uv.y*52.0+seconds*2.7)*0.7;
+    float tear=(noise(vec2(scan,floor(seconds*9.0)))-0.5)*2.0;
+    vec2 warped=clamp(uv+vec2((weave+tear)*referencePixel.x*damage,0.0),vec2(0.0),vec2(1.0));
+    vec2 offset=(uv-0.5)*referencePixel*2.6*damage+referencePixel*high*0.15;
     vec3 color=vec3(texture2D(scene,clamp(warped+offset,0.0,1.0)).r,
         texture2D(scene,warped).g,texture2D(scene,clamp(warped-offset,0.0,1.0)).b);
-    vec2 radius=texel*mix(1.5,30.0,damage);
+    vec2 radius=referencePixel*mix(1.0,5.0,damage);
     vec3 halo=(light(uv+vec2(radius.x,0.0))+light(uv-vec2(radius.x,0.0))+
         light(uv+vec2(0.0,radius.y))+light(uv-vec2(0.0,radius.y)))*0.25;
-    color+=max(halo-original*0.45,vec3(0.0))*vec3(0.80,0.25,0.14)*damage;
+    color+=max(halo-original*0.75,vec3(0.0))*vec3(0.12,0.05,0.03)*damage;
     float luminance=dot(original,vec3(0.2126,0.7152,0.0722));
-    vec2 filmPixel=uv/texel;
+    vec2 filmPixel=uv*referenceSize;
     vec2 seed=mod(floor(seconds*24.0)*vec2(17.0,53.0),vec2(113.0,197.0));
     vec2 pixel=floor(filmPixel);
     // Independent one-pixel grains, with a soft distribution rather than coarse cells.
@@ -97,13 +101,14 @@ void main() {
     float photon=pow(noise(pixel+seed+91.3),12.0);
     float shadow=1.0-smoothstep(0.02,0.40,luminance);
     color+=vec3(0.95,0.97,1.0)*photon*0.085*damage*shadow;
-    vec2 scatter=vec2(noise(pixel+seed+7.1),noise(pixel.yx+seed+41.9))-0.5;
-    color+=light(uv+scatter*texel*32.0)*0.055*damage;
-    float exposure=0.04*sin(uv.y*8.0+seconds*0.3)+0.025*cos(uv.x*11.0-seconds*0.2);
+    float angle=noise(pixel+seed+7.1)*6.283185307;
+    vec2 scatter=vec2(cos(angle),sin(angle))*sqrt(noise(pixel.yx+seed+41.9))*5.0;
+    color+=light(uv+scatter*referencePixel)*0.025*damage;
+    float exposure=0.006*sin(uv.y*8.0+seconds*0.3)+0.004*cos(uv.x*11.0-seconds*0.2);
     color*=1.0+damage*exposure;
     float edge=dot(uv-0.5,uv-0.5);
-    color*=1.0-1.05*damage*edge;
-    color=mix(color,pow(max(color,0.0),vec3(0.88,1.04,1.10)),damage*0.65);
+    color*=1.0-0.12*damage*edge;
+    color=mix(color,pow(max(color,0.0),vec3(0.98,1.005,1.01)),damage*0.4);
     gl_FragColor=vec4(clamp(color,0.0,1.0),1.0);
 }
 )";
