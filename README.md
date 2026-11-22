@@ -172,7 +172,8 @@ The renderer uses compatibility OpenGL and GLSL 1.20 post-processing.
 ## How much historical code changed?
 
 Against the recovered baseline, **63 of 12,783 historical source lines were changed
-or removed: 0.49%**. Another **71 lines were added inside historical files**.
+or removed: 0.49%**. Another **71 lines were added inside historical files**: a combined edit volume
+of **1.05%** relative to the original line count.
 Unchanged historical lines make up **68.05% of the final first-party source tree**.
 
 These are deliberately defined **source-line figures**, not a percentage of

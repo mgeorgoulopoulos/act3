@@ -13,7 +13,7 @@ def source(name):
     return (not name.startswith(('third_party/', 'tools/', 'docs/')) and
             (Path(name).suffix in {'.cpp', '.h', '.rc', '.in', '.py', '.ps1'} or name == 'CMakeLists.txt'))
 def lines(data):
-    return [line.rstrip() for line in data.decode('utf-8', errors='replace').splitlines()]
+    return [line.rstrip() for line in data.splitlines()]
 def measure():
     baseline = git('rev-list', '--max-parents=0', 'HEAD').decode().splitlines()[0]
     original = [p for p in git('ls-tree', '-r', '--name-only', baseline).decode().splitlines() if source(p)]
@@ -35,6 +35,7 @@ def measure():
                 added_lines_in_historical_files=added, unchanged_historical_lines=surviving,
                 final_first_party_source_lines=total,
                 historical_lines_changed_percent=round(100*changed/old_count, 2),
+                historical_edit_volume_percent=round(100*(changed+added)/old_count, 2),
                 unchanged_historical_share_percent=round(100*surviving/total, 2))
 def markdown(m):
     return f'''# How much of ACT3 is still the original?
@@ -50,6 +51,7 @@ Run `python tools/source_metrics.py` to reproduce the numbers.
 | Original lines changed or removed | {m['changed_or_removed_baseline_lines']:,} |
 | **Historical source lines changed/removed** | **{m['historical_lines_changed_percent']}%** |
 | Added lines inside historical files | {m['added_lines_in_historical_files']:,} |
+| **Edit volume including those additions, relative to original lines** | **{m['historical_edit_volume_percent']}%** |
 | Unchanged historical lines retained | {m['unchanged_historical_lines']:,} |
 | Final first-party source lines | {m['final_first_party_source_lines']:,} |
 | **Unchanged historical share of the first-party source tree** | **{m['unchanged_historical_share_percent']}%** |
@@ -82,4 +84,4 @@ if __name__ == '__main__':
     args = parser.parse_args(); result = measure()
     print(json.dumps(result, indent=2))
     if args.write:
-        (ROOT/'docs/code-provenance.md').write_text(markdown(result), encoding='utf-8')
+        (ROOT/'docs/code-provenance.md').write_bytes(markdown(result).encode('utf-8'))
