@@ -170,10 +170,7 @@ string(REPLACE [=[#include "GreetzScene.h"]=] [=[#include "greetz_scene.h"
 using namespace d3d9;
 using std::sin;]=] greetz_source "${greetz_source}")
 string(REPLACE "if (T >= 3*cycle/4) return" "return" greetz_source "${greetz_source}")
-string(REPLACE [=[if (!ma1.LoadFrom3DS("data\geometry\Eggplant.3ds" , "PlastiKPurple01"))]=]
-    [=[char materialFile[] = "data/geometry/eggplant.3ds";
-    char materialName[] = "PlastiKPurple01";
-    if (!ma1.LoadFrom3DS(materialFile, materialName))]=] greetz_source "${greetz_source}")
+string(REPLACE [=["data\\geometry\\Eggplant.3ds"]=] [=["data/geometry/eggplant.3ds"]=] greetz_source "${greetz_source}")
 string(REPLACE "Greetz/Deus.png" "Greetz/deus.png" greetz_source "${greetz_source}")
 string(REPLACE "Asd.SetTransform(TRANSFORM_TRANSLATE ,"
     "extra::positionGreet(*m_pd3dDevice, Asd," greetz_source "${greetz_source}")
@@ -181,7 +178,6 @@ string(REPLACE "// Normalize normals" "extra::gradeGreetzBackground();\n\t// Nor
 string(REPLACE "pos.x = 150;" "extra::gradeGreetzSurface();\n\tpos.x = 150;" greetz_source "${greetz_source}")
 string(REPLACE "m1.Create(40,40,40," "m1.Create(extra::blobResolution(),extra::blobResolution(),extra::blobResolution()," greetz_source "${greetz_source}")
 string(PREPEND greetz_source "#include \"extra/blob_grid.h\"\n")
-string(REPLACE "Eggplant.3ds" "eggplant.3ds" greetz_source "${greetz_source}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp" "${greetz_source}")
 target_sources(act3 PRIVATE marching.cpp 3ds.cpp recreated/blob_preview.cpp extra/greetz_layout.cpp
     compatibility/d3d9/render_target.cpp "${CMAKE_CURRENT_BINARY_DIR}/generated/greetz_scene.cpp")
