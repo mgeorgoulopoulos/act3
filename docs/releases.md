@@ -115,3 +115,9 @@ and player output are retained as short-lived CI artifacts; the player contains
 no temporary diagnostic instrumentation. This catches stalls and gross rendering
 failures in this software-rendered environment, not vendor-specific GPU problems
 or audible output on physical hardware.
+
+Texture regression checks also load the intro R/E glyphs after deliberately
+raising unrelated OpenGL errors, then inspect their uploaded pixels. The chrome
+cubemap check compares all adjacent face edges after upload, catching reversed
+Z faces rather than relying on screenshots alone. These checks run in the build
+container before installation; the test executable is not distributed.

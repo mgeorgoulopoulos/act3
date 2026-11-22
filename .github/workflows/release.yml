@@ -86,8 +86,9 @@ jobs:
           docker build -f packaging/linux.Dockerfile -t act3-linux-build .
           docker run --rm -v "$PWD:/src" act3-linux-build sh -ec '
             python3 tools/release.py extract-original --archive build/download/original.zip --output build/original
-            cmake -S . -B build/linux-ci -DCMAKE_BUILD_TYPE=Release -DACT3_PORTABLE_LINUX=ON -DACT3_GEOMETRY_DIR=/src/build/original/ACT3/data/geometry
+            cmake -S . -B build/linux-ci -DCMAKE_BUILD_TYPE=Release -DACT3_PORTABLE_LINUX=ON -DACT3_BUILD_RENDER_CHECKS=ON -DACT3_GEOMETRY_DIR=/src/build/original/ACT3/data/geometry
             cmake --build build/linux-ci --parallel 2
+            xvfb-run -a /src/build/linux-ci/act3-render-checks
             cmake --install build/linux-ci --prefix stage/linux
             python3 tools/bundle_linux.py stage/linux
             xvfb-run -a /src/stage/linux/act3 --original --check-scenes --verbose --windowed --resolution=800x600

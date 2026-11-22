@@ -23,6 +23,12 @@
 #include <GL/gl.h>
 
 namespace {
+void clearPreviousGlErrors()
+{
+    // glGetError is context-wide: earlier draw failures must not invalidate a
+    // successfully decoded/uploaded texture (which would become a white quad).
+    while (glGetError() != GL_NO_ERROR) {}
+}
 bool readImage(const std::string& path, unsigned& width, unsigned& height,
     std::vector<unsigned char>& pixels)
 {
@@ -135,6 +141,7 @@ d3d9::HRESULT D3DXCreateTextureFromFileEx(d3d9::Device* device, const char* file
     if (!texture)
         return E_OUTOFMEMORY_RESULT;
     texture->target = GL_TEXTURE_2D;
+    clearPreviousGlErrors();
     GLint previous = 0;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous);
     glGenTextures(1, &texture->name);
@@ -199,6 +206,7 @@ d3d9::HRESULT D3DXCreateCubeTextureFromFile(d3d9::Device* device, const char* fi
         constexpr GLenum cubeMap = 0x8513, positiveX = 0x8515;
         auto* texture = new (std::nothrow) BaseTexture{0, cubeMap};
         if (!texture) return E_OUTOFMEMORY_RESULT;
+        clearPreviousGlErrors();
         GLint previous;
         glGetIntegerv(0x8514, &previous);
         glGenTextures(1, &texture->name);
@@ -274,6 +282,7 @@ d3d9::HRESULT D3DXCreateCubeTextureFromFile(d3d9::Device* device, const char* fi
     auto* texture = new (std::nothrow) BaseTexture{0, cubeMap};
     if (!texture)
         return E_OUTOFMEMORY_RESULT;
+    clearPreviousGlErrors();
     GLint previous = 0;
     glGetIntegerv(0x8514, &previous); // GL_TEXTURE_BINDING_CUBE_MAP
     glGenTextures(1, &texture->name);
@@ -283,10 +292,14 @@ d3d9::HRESULT D3DXCreateCubeTextureFromFile(d3d9::Device* device, const char* fi
     glTexParameteri(cubeMap, GL_TEXTURE_WRAP_S, 0x812f); // GL_CLAMP_TO_EDGE
     glTexParameteri(cubeMap, GL_TEXTURE_WRAP_T, 0x812f);
     glTexParameteri(cubeMap, 0x8072, 0x812f); // GL_TEXTURE_WRAP_R
-    for (unsigned face = 0; face < 6; ++face)
+    for (unsigned face = 0; face < 6; ++face) {
+        // This historical chrome asset stores its Z faces in the opposite order.
+        // Keep standard DDS ordering for other maps and the anniversary PNG sets.
+        const unsigned sourceFace = path.substr(14) == "chrome.dds" && face >= 4 ? face ^ 1u : face;
         upload(positiveX + face, 0, rgbaDxt1, size, size, 0,
             ((size + 3) / 4) * ((size + 3) / 4) * 8,
-            bytes.data() + 128 + face * faceBytes);
+            bytes.data() + 128 + sourceFace * faceBytes);
+    }
     glBindTexture(cubeMap, static_cast<GLuint>(previous));
     if (!texture->name || glGetError() != GL_NO_ERROR) {
         texture->Release();
