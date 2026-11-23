@@ -13,7 +13,7 @@ Run `python tools/source_metrics.py` to reproduce the numbers.
 | Added lines inside historical files | 71 |
 | **Edit volume including those additions, relative to original lines** | **1.05%** |
 | Unchanged historical lines retained | 12,720 |
-| Final first-party source lines | 19,217 |
+| Final first-party source lines | 19,218 |
 | **Unchanged historical share of the first-party source tree** | **66.19%** |
 
 ## What these figures mean
