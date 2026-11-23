@@ -103,8 +103,16 @@ The Release executable is `build/Release/act3.exe`.
 
 ### Linux
 
-Linux has a terminal interface instead of a settings GUI. It uses **X11/GLX**,
-**XRandR** for display modes and the same OpenGL renderer and miniaudio playback.
+Running without arguments opens a native dark **Xlib launcher**, with edition,
+resolution and fullscreen controls. It uses the existing X11/libpng dependencies;
+no Qt, GTK or additional GUI runtime is needed. Mouse and keyboard navigation are
+supported. Command-line arguments start playback directly; `--ui` opens the launcher
+with your chosen options, and `--no-ui` keeps the original direct CLI experience.
+
+<img src="docs/images/launcher-linux.png" alt="ACT3 native Xlib launcher captured in Linux CI" width="600">
+
+Linux uses **X11/GLX**, **XRandR** for display modes and the same OpenGL renderer
+and miniaudio playback.
 The portable x86_64 release targets **glibc 2.31+**, with bundled image/XRandR helper
 libraries and a statically linked GCC runtime. The system supplies libc, X11/XCB,
 OpenGL drivers and an audio backend. No AppImage/FUSE runtime is required.
@@ -127,7 +135,8 @@ distros still needs real-machine testing; a native Wayland backend is not includ
 ### Command-line options
 
 ```sh
-./act3                                         # Party / native / fullscreen / music
+./act3                                         # Settings launcher (Party / native / fullscreen)
+./act3 --no-ui                                 # Direct Party playback / native / fullscreen / music
 ./act3 --extra                                 # 22nd anniversary edition
 ./act3 --extra --windowed --resolution=1920x1080
 ./act3 --original --fullscreen --resolution=1920x1080

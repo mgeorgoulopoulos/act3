@@ -80,7 +80,7 @@ and reviewed the results alongside the music.
 
 - A D3D9-compatible API subset over OpenGL, rather than invasive rewrites of every scene.
 - Build-tree adapters to keep modern host integration and optional hooks outside historical files.
-- Native Windows UI; Linux terminal UX with X11/GLX and XRandR display control.
+- Native Win32 and Xlib launchers, with a direct Linux terminal path and XRandR display control.
 - miniaudio for MP3 playback on both platforms, with live FFT analysis over decoded audio.
 - Per-part LUTs, with extra depth-aware corrections where a global grade is insufficient.
 - Native-resolution anniversary rendering and aspect-preserving black padding.

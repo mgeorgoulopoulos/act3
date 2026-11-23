@@ -121,3 +121,9 @@ raising unrelated OpenGL errors, then inspect their uploaded pixels. The chrome
 cubemap check compares all adjacent face edges after upload, catching reversed
 Z faces rather than relying on screenshots alone. These checks run in the build
 container before installation; the test executable is not distributed.
+
+The Linux playback job also exercises the real Xlib launcher with mouse and
+keyboard input, verifies the selected edition/windowed resolution reaches the
+player, and checks that cancellation does not initialize audio. Default and
+anniversary screenshots, including both dropdowns, are kept in the short-lived
+`linux-launcher` CI artifact. Explicit command-line playback remains launcher-free.

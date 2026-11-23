@@ -6,6 +6,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
+#include <X11/cursorfont.h>
 #include <png.h>
 #include <algorithm>
 #include <array>
@@ -206,6 +207,7 @@ bool platform::showLinuxLauncher(Display* display,LaunchOptions& options){
     Atom type=XInternAtom(display,"_NET_WM_WINDOW_TYPE_DIALOG",False);XChangeProperty(display,s.window,XInternAtom(display,"_NET_WM_WINDOW_TYPE",False),XA_ATOM,32,PropModeReplace,reinterpret_cast<unsigned char*>(&type),1);
     const char dark[]="dark";XChangeProperty(display,s.window,XInternAtom(display,"_GTK_THEME_VARIANT",False),XInternAtom(display,"UTF8_STRING",False),8,PropModeReplace,reinterpret_cast<const unsigned char*>(dark),4);
     XSelectInput(display,s.window,ExposureMask|KeyPressMask|ButtonPressMask|ButtonReleaseMask|PointerMotionMask|LeaveWindowMask|FocusChangeMask|StructureNotifyMask);
+    const Cursor cursor=XCreateFontCursor(display,XC_left_ptr);XDefineCursor(display,s.window,cursor);
     if(!s.done)XMapWindow(display,s.window);
     while(!s.done){
         XEvent event{};XNextEvent(display,&event);bool repaint=true;
@@ -213,7 +215,9 @@ bool platform::showLinuxLauncher(Display* display,LaunchOptions& options){
         case Expose:break;
         case MotionNotify:{
             const int x=int(event.xmotion.x/s.scale),y=int(event.xmotion.y/s.scale);s.hover=-1;
-            for(int i=0;i<6;++i)if(controls[i].contains(x,y))s.hover=i;break;
+            for(int i=0;i<6;++i)if(controls[i].contains(x,y))s.hover=i;
+            if(s.popup>=0){const auto r=s.menu();if(r.contains(x,y))s.choice=std::min(s.count()-1,s.scroll+(y-r.y)/34);}
+            break;
         }
         case LeaveNotify:s.hover=-1;break;
         case FocusOut:s.popup=-1;s.pressed=-1;break;
@@ -255,6 +259,6 @@ bool platform::showLinuxLauncher(Display* display,LaunchOptions& options){
     }
     if(s.accepted){const auto mode=s.modes[s.resolution];options.width=mode.w;options.height=mode.h;options.fullscreen=s.fullscreen;preview::selectOption(s.anniversary?"--extra":"--original");}
     if(s.figure)XDestroyImage(s.figure);if(s.font)XFreeFont(display,s.font);if(s.small)XFreeFont(display,s.small);
-    XFreePixmap(display,s.canvas);XFreeGC(display,s.gc);if(s.exists)XDestroyWindow(display,s.window);
+    XFreeCursor(display,cursor);XFreePixmap(display,s.canvas);XFreeGC(display,s.gc);if(s.exists)XDestroyWindow(display,s.window);
     XFlush(display);return s.accepted;
 }
