@@ -120,7 +120,7 @@ jobs:
       - name: Prepare software graphics and an audio sink
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xauth pulseaudio pulseaudio-utils imagemagick python3-pil xdotool xfonts-base xfonts-75dpi libgl1-mesa-dri libglx-mesa0
+          sudo apt-get install -y xvfb xauth pulseaudio pulseaudio-utils imagemagick python3-pil xdotool x11-utils xfonts-base xfonts-75dpi libgl1-mesa-dri libglx-mesa0
           chmod +x stage/linux/act3
           pulseaudio --start --exit-idle-time=-1
           pactl load-module module-null-sink sink_name=ci

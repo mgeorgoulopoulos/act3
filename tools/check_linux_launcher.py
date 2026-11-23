@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import time
+from PIL import Image
 
 
 def command(*args):
@@ -48,6 +49,10 @@ def main():
                 time.sleep(.15)
                 subprocess.run(['import','-window',window,str(args.output/name)],check=True,timeout=15)
             shot('launcher-default.png')
+            with Image.open(args.output/'launcher-default.png') as image:
+                rgb=image.convert('RGB')
+                if rgb.getpixel((int(32*scale),int(240*scale)))!=(223,54,74):
+                    raise RuntimeError('Bare launch did not select Party version')
             click(555,282)
             shot('launcher-anniversary.png')
             click(555,402)
@@ -60,6 +65,16 @@ def main():
             # Resolution -> Display -> Exit -> Go. Exercise keyboard traversal.
             command('key','Tab','Tab','Tab','Return')
             player=wait_window('Full Demo',process)
+            deadline=time.monotonic()+45
+            while time.monotonic()<deadline:
+                if process.poll() is not None:raise RuntimeError('Player exited during launcher handoff')
+                protocols=subprocess.run(['xprop','-id',player,'WM_PROTOCOLS'],capture_output=True,text=True,timeout=5)
+                if 'WM_DELETE_WINDOW' in protocols.stdout:break  # Installed after scene/audio loading.
+                time.sleep(.1)
+            else:raise RuntimeError('Player did not finish initialization')
+            time.sleep(2)
+            if process.poll() is not None:raise RuntimeError('Retired launcher events stopped the player')
+            subprocess.run(['import','-window',player,str(args.output/'launcher-started-player.png')],check=True,timeout=15)
             command('windowfocus',player);command('key','Escape')
             process.wait(timeout=45)
             if process.returncode!=0:raise RuntimeError('Player failed after launcher acceptance')
@@ -68,9 +83,10 @@ def main():
     if '22nd anniversary edition / 16:9' not in accepted or '800 x 600 / windowed' not in accepted:
         raise RuntimeError('Launcher did not pass the chosen edition/resolution/display mode to the player:\n'+accepted)
     with (args.output/'cancelled.log').open('w') as log:
-        process=subprocess.Popen([binary],cwd='/tmp',stdout=log,stderr=log)
+        process=subprocess.Popen([binary,'--ui','--extra','--windowed','--resolution=800x600'],cwd='/tmp',stdout=log,stderr=log)
         try:
             window=wait_window('^ACT3 / Reversed Engineers$',process)
+            subprocess.run(['import','-window',window,str(args.output/'launcher-preset.png')],check=True,timeout=15)
             command('windowfocus',window);command('key','Escape');process.wait(timeout=10)
             if process.returncode!=0:raise RuntimeError('Cancel did not exit cleanly')
         finally:stop(process)

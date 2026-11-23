@@ -93,6 +93,7 @@ int runWindow(Display* display,const platform::LaunchOptions& options)
             for (int remaining = queued < 64 ? queued : 64; remaining && running; --remaining) {
                 XEvent event{};
                 XNextEvent(display, &event);
+                if (event.xany.window != window) continue; // Ignore the retired launcher window.
                 switch (event.type) {
                 case ConfigureNotify:
                     width = event.xconfigure.width;
