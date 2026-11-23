@@ -120,10 +120,21 @@ jobs:
       - name: Prepare software graphics and an audio sink
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xauth pulseaudio pulseaudio-utils imagemagick python3-pil xdotool libgl1-mesa-dri libglx-mesa0
+          sudo apt-get install -y xvfb xauth pulseaudio pulseaudio-utils imagemagick python3-pil xdotool xfonts-base xfonts-75dpi libgl1-mesa-dri libglx-mesa0
           chmod +x stage/linux/act3
           pulseaudio --start --exit-idle-time=-1
           pactl load-module module-null-sink sink_name=ci
+      - name: Exercise the Xlib launcher and capture its window
+        if: matrix.edition == 'original'
+        run: |
+          xvfb-run -a -s '-screen 0 1280x800x24' /usr/bin/python3 tools/check_linux_launcher.py \
+            --binary stage/linux/act3 --output build/launcher
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always() && matrix.edition == 'original'
+        with:
+          name: linux-launcher
+          path: build/launcher/
+          retention-days: 7
       - name: Play every part with real audio-driven timing
         run: |
           xvfb-run -a -s '-screen 0 960x540x24' /usr/bin/python3 tools/check_linux_playback.py \

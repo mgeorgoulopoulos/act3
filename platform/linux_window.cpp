@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include "launch_options.h"
 #include "linux_display.h"
+#include "linux_launcher.h"
+#include <algorithm>
 #include "../recreated/mesh_preview.h"
 #include "../extra/mode.h"
 #include "../extra/dramatometer.h"
@@ -152,11 +154,15 @@ int main(int argc, char** argv)
     if(options.version){std::puts("ACT3 " ACT3_VERSION);return 0;}
     if(options.checkAssets){if(!runtime::checkAssets(error))return reportError(error.c_str());std::puts("ACT3 assets OK");return 0;}
     if(options.help){platform::printHelp(color);return 0;}
-    std::printf("\n%s  ACT3 / REVERSED ENGINEERS%s\n  %s / soundtrack on\n  Loading the journey...\n\n",
-        color?"\033[1;31m":"",color?"\033[0m":"",extra::enabled?"22nd anniversary edition / 16:9":"Party version / 4:3");
     Display* display = XOpenDisplay(nullptr);
     if (!display)
         return reportError("Could not connect to the X display.");
+    const bool explicitUi=std::find(arguments.begin(),arguments.end(),"--ui")!=arguments.end();
+    if(options.launcher&&!options.checkScenes&&(arguments.empty()||explicitUi)){
+        if(!platform::showLinuxLauncher(display,options)){XCloseDisplay(display);return 0;}
+    }
+    std::printf("\n%s  ACT3 / REVERSED ENGINEERS%s\n  %s / soundtrack on\n  Loading the journey...\n\n",
+        color?"\033[1;31m":"",color?"\033[0m":"",extra::enabled?"22nd anniversary edition / 16:9":"Party version / 4:3");
     const int result = runWindow(display,options);
     XCloseDisplay(display);
     return result;
